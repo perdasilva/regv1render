@@ -2,7 +2,7 @@ Verify, commit, and publish the current epic's work.
 
 ## Step 1: Verify
 
-1. Run the full quality gate: `make check`
+1. Run the full quality gate: `make verify`
 2. Find the spec directory under `specs/` that matches the current branch.
 3. If a spec exists, walk through `validation.md` acceptance criteria and verify each is met.
 4. Check CLAUDE.md freshness — verify build commands, architecture summary, directory structure, and conventions all reflect the current state.

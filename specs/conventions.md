@@ -65,7 +65,7 @@ Match the primary commit's subject line (conventional commit format).
 - Refactor rendering logic into public API at repo root with internal/ for private code
 
 ## Test Plan
-- [ ] `make check` passes
+- [ ] `make verify` passes
 - [ ] Upstream test cases ported and passing
 - [ ] Public API reviewed for minimal surface area
 ```

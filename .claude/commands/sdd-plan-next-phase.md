@@ -51,7 +51,7 @@ Create three files in the spec directory:
 ### validation.md
 - Acceptance criteria (specific, testable statements)
 - Test scenarios to verify
-- Quality gates that must pass (e.g., `make check`)
+- Quality gates that must pass (e.g., `make verify`)
 - How to manually verify the work
 
 ## Step 6: Review

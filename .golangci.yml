@@ -1,0 +1,28 @@
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - typecheck
+    - gocritic
+    - gofmt
+    - goimports
+    - misspell
+    - prealloc
+    - revive
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/perdasilva/regv1render
+  revive:
+    rules:
+      - name: blank-imports
+      - name: exported
+      - name: error-return
+      - name: increment-decrement
+      - name: range
+      - name: receiver-naming
+      - name: var-naming
