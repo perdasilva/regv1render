@@ -38,7 +38,7 @@ For each changed file, check:
 
 ## Step 5: Quality gate
 
-1. Run `make check` to verify everything passes.
+1. Run `make verify` to verify everything passes.
 2. Run `make fmt` and check if it produces any changes.
 
 ## Step 6: Report

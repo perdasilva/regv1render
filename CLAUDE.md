@@ -9,6 +9,7 @@ A standalone Go library for rendering OLM registry+v1 bundles to plain Kubernete
 testdata/      Test fixtures (ignored by go build)
 internal/      Non-public implementation details (not importable by consumers)
 cmd/rv1/       Showcase CLI tool for rendering bundles from the command line
+.bingo/        Pinned dev tool versions (managed by bingo)
 specs/         SDD governing specs (mission, tech stack, conventions)
 ```
 
@@ -29,7 +30,7 @@ make lint     Run golangci-lint
 make fmt      Run gofmt and goimports
 make vet      Run go vet
 make tidy     Run go mod tidy
-make check    Full quality gate (fmt + vet + lint + test)
+make verify   Full quality gate (fmt + vet + lint + test)
 make clean    Remove build artifacts
 ```
 

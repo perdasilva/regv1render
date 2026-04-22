@@ -16,7 +16,7 @@ For each task group in `plan.md`, in order:
 
 1. Announce which task group you're starting.
 2. Implement each task in the group.
-3. After completing the group, run `make check` (or the available subset if early epics haven't set up all targets yet).
+3. After completing the group, run `make verify` (or the available subset if early epics haven't set up all targets yet).
 4. Fix any issues before moving to the next group.
 5. If a decision isn't covered by the spec, use AskUserQuestion to ask the user.
 
@@ -24,7 +24,7 @@ For each task group in `plan.md`, in order:
 
 After all task groups are complete:
 
-1. Run the full quality gate: `make check`
+1. Run the full quality gate: `make verify`
 2. Walk through each acceptance criterion in `validation.md` and verify it's met.
 3. Run any manual verification steps described in `validation.md`.
 4. If any criterion is not met, fix the issue and re-validate.
