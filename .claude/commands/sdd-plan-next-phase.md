@@ -17,8 +17,9 @@ Plan the next epic. Find the next eligible epic issue, create a branch, and writ
 
 ## Step 3: Create branch
 
-1. Determine a branch name from the issue title. Use format `feat/<short-description>` (e.g., issue "[epic] Project scaffolding" → `feat/project-scaffolding`).
-2. Create and check out the branch: `git checkout -b <branch-name>`
+1. Determine the branch type from the nature of the epic (see `specs/conventions.md` for valid types: feat, fix, chore, refactor, docs, test). Use AskUserQuestion to confirm the branch type if it's ambiguous.
+2. Determine a branch name from the issue title. Use format `<type>/<short-description>` (e.g., issue "[epic] Project scaffolding" → `chore/project-scaffolding`, issue "[epic] rv1 CLI tool" → `feat/rv1-cli`).
+3. Create and check out the branch: `git checkout -b <branch-name>`
 
 ## Step 4: Write the spec
 
