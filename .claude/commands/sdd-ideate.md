@@ -1,12 +1,12 @@
-Brainstorm and create new phases for the project roadmap. Accepts an optional starting idea or theme via $ARGUMENTS.
+Brainstorm and create new epics for the project roadmap. Accepts an optional starting idea or theme via $ARGUMENTS.
 
 ## Step 1: Gather context
 
 1. Read `specs/mission.md` to understand goals, non-goals, and design principles.
 2. Read `specs/tech-stack.md` to understand the project's technical foundation.
 3. List existing epic issues (open and closed): `gh issue list --label epic --state all --json number,title,body,state --limit 50`
-4. Scan existing phase spec directories under `specs/` to see what's been planned and implemented: `ls -d specs/*-phase-* 2>/dev/null`
-5. Summarize the current state briefly: what exists, what phases are done, what's in progress, where the roadmap currently ends.
+4. Scan existing spec directories under `specs/` to see what's been planned and implemented: `ls -d specs/*-issue-* 2>/dev/null`
+5. Summarize the current state briefly: what exists, what epics are done, what's in progress, what's remaining.
 
 ## Step 2: Brainstorm
 
@@ -23,29 +23,28 @@ Brainstorm and create new phases for the project roadmap. Accepts an optional st
    - Any technical debt to address?
    - What would make the library more useful?
 
-## Step 3: Propose phases
+## Step 3: Propose epics
 
-1. Draft candidate phases, each with:
+1. Draft candidate epics, each with:
    - A short name
    - One-line description
    - 3-6 deliverable bullets
    - Why it matters (connection to mission goals)
 2. Present the candidates to the user via AskUserQuestion.
-3. Iterate: split large phases, merge small ones, reorder by priority, check for dependencies, verify none conflict with non-goals.
+3. Iterate: split large epics, merge small ones, reorder by priority, check for dependencies, verify none conflict with non-goals.
 
-## Step 4: Create phase issues
+## Step 4: Create epic issues
 
-Once the user approves the phases:
+Once the user approves the epics:
 
-1. For each new phase, create a GitHub issue:
+1. For each new epic, create a GitHub issue:
    ```
-   gh issue create --title "[epic] <name>" --label "epic,ready" --body "<phase body with deliverables and dependencies>"
+   gh issue create --title "[epic] <name>" --label "epic,ready" --body "<body with deliverables and dependencies>"
    ```
 2. Use the same body format as existing epic issues:
-   - `## Phase N: <name>` heading
+   - `## <name>` heading
    - Deliverable bullets
-   - Dependencies section if applicable
-3. Number phases continuing from the last existing phase number.
+   - `**Dependencies:** #N` section if applicable
 
 ## Step 5: Summary
 

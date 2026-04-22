@@ -33,17 +33,17 @@ make check    Full quality gate (fmt + vet + lint + test)
 make clean    Remove build artifacts
 ```
 
-## Phase-Based Workflow
+## Epic-Based Workflow
 
-Work is organized into phases tracked as GitHub issues with the `epic` label. Use these slash commands to drive the workflow:
+Work is organized into epics tracked as GitHub issues with the `epic` label. Use these slash commands to drive the workflow:
 
 | Command | Purpose |
 |---|---|
 | `/sdd-plan-next-phase` | Find the next epic issue, create a branch, write a detailed spec |
-| `/sdd-implement` | Implement the current phase following its spec |
+| `/sdd-implement` | Implement the current epic following its spec |
 | `/sdd-review` | Review all branch changes for quality and spec compliance |
 | `/sdd-ship` | Verify, commit, and publish — creates PR with `Closes #N` |
-| `/sdd-ideate` | Brainstorm and create new phases |
+| `/sdd-ideate` | Brainstorm and create new epics |
 
 ## Conventions
 

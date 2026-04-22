@@ -17,11 +17,11 @@ regv1render/
 ├── cmd/
 │   └── rv1/             # showcase CLI tool
 │       └── main.go
-├── specs/               # SDD governing specs and phase-specific specs
+├── specs/               # SDD governing specs and per-epic specs
 │   ├── mission.md
 │   ├── tech-stack.md
 │   ├── conventions.md
-│   └── YYYY-MM-DD-phase-N-*/   # phase specs created by /sdd-plan-next-phase
+│   └── YYYY-MM-DD-issue-N-*/   # epic specs created by /sdd-plan-next-phase
 │       ├── plan.md
 │       ├── requirements.md
 │       └── validation.md

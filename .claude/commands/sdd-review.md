@@ -5,10 +5,10 @@ Review all changes on the current branch for quality, consistency, and spec comp
 1. Identify the current branch: `git branch --show-current`
 2. Find the base branch (usually `main`): `git merge-base HEAD main`
 3. List all changed files: `git diff main --name-only`
-4. Find the phase spec directory under `specs/` that matches the current branch/phase.
-5. If a phase spec exists, read `plan.md`, `requirements.md`, and `validation.md`.
+4. Find the spec directory under `specs/` that matches the current branch.
+5. If a spec exists, read `plan.md`, `requirements.md`, and `validation.md`.
 6. Read `specs/mission.md`, `specs/tech-stack.md`, and `specs/conventions.md`.
-7. Find the corresponding epic issue: `gh issue list --label epic --state open --json number,title,body --limit 50` and match by phase name.
+7. Find the corresponding epic issue: `gh issue list --label epic --state open --json number,title,body --limit 50` and match by branch name.
 
 ## Step 2: Code review
 
@@ -22,7 +22,7 @@ For each changed file, check:
 
 ## Step 3: Spec consistency
 
-1. If a phase spec exists, verify all requirements in `requirements.md` are addressed.
+1. If a spec exists, verify all requirements in `requirements.md` are addressed.
 2. Check that the implementation aligns with `specs/mission.md` design principles.
 3. Verify the code follows `specs/tech-stack.md` structure and conventions.
 4. Check commit messages follow `specs/conventions.md` format (if any commits exist on the branch).
