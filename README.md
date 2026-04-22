@@ -74,6 +74,37 @@ deploymentConfig:
     kubernetes.io/os: linux
 ```
 
+## OLMv0 Compatibility
+
+The library includes opt-in support for rendering behaviors from the original [operator-lifecycle-manager](https://github.com/operator-framework/operator-lifecycle-manager) (OLMv0).
+
+### Provided API ClusterRoles
+
+Use `WithProvidedAPIsClusterRoles()` to generate aggregated admin/edit/view ClusterRoles for each owned CRD, matching OLMv0 behavior:
+
+```go
+objs, err := regv1render.Render(rv1, "my-namespace",
+    regv1render.WithProvidedAPIsClusterRoles(),
+)
+```
+
+This generates 4 ClusterRoles per owned CRD:
+- `<name>-<version>-admin` — full access (`*`)
+- `<name>-<version>-edit` — write access (`create`, `update`, `patch`, `delete`)
+- `<name>-<version>-view` — read access (`get`, `list`, `watch`)
+- `<name>-<version>-crd-view` — read access to the CRD definition itself
+
+These roles use Kubernetes [aggregated ClusterRoles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#aggregated-clusterroles) so they're automatically included in the built-in admin/edit/view roles.
+
+## Upstream Relationship
+
+This library extracts and consolidates the registry+v1 bundle rendering logic from two operator-framework projects:
+
+- **[operator-controller](https://github.com/operator-framework/operator-controller)** — the OLMv1 rendering pipeline (`internal/rukpak/render`), which provides the core `BundleRenderer`, validators, and resource generators
+- **[operator-lifecycle-manager](https://github.com/operator-framework/operator-lifecycle-manager)** — the OLMv0 rendering behaviors, available as opt-in options (e.g., provided API ClusterRoles)
+
+The goal is upstream fidelity — rendering output matches the upstream implementations for the same inputs. The library includes regression tests with golden-file fixtures to verify this.
+
 ## Development
 
 Requires Go 1.25+. Dev tools are managed via [bingo](https://github.com/bwplotka/bingo) and built automatically on first use.
@@ -87,6 +118,8 @@ make vet       # run go vet
 make verify    # full quality gate (fmt + vet + lint + test)
 make clean     # remove build artifacts
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full contributor guide.
 
 ## License
 
