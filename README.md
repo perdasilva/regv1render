@@ -18,7 +18,7 @@ go install github.com/perdasilva/regv1render/cmd/rv1@latest
 
 ## Development
 
-Requires Go 1.24+. Dev tools are managed via [bingo](https://github.com/bwplotka/bingo) and built automatically on first use.
+Requires Go 1.25+. Dev tools are managed via [bingo](https://github.com/bwplotka/bingo) and built automatically on first use.
 
 ```bash
 make build     # build the rv1 CLI binary

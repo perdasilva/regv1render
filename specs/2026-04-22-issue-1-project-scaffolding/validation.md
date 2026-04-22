@@ -26,7 +26,7 @@
 
 ## Manual Verification
 
-1. Clone the repo on a clean machine with Go 1.24
+1. Clone the repo on a clean machine with Go 1.25
 2. Run `make verify` — should pass with no prerequisites beyond Go and golangci-lint
 3. Run `make build && bin/rv1` — binary runs
 4. Push a commit — verify GitHub Actions CI completes green

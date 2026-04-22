@@ -6,7 +6,7 @@ Set up the foundational project structure, build system, and CI pipeline so that
 
 Initialize the Go module and create minimal source files so the project compiles.
 
-- Initialize `go.mod` with module path `github.com/perdasilva/regv1render` and Go 1.24
+- Initialize `go.mod` with module path `github.com/perdasilva/regv1render` and Go 1.25
 - Create `doc.go` at the repo root with a `package regv1render` declaration and a package-level doc comment
 - Create `cmd/rv1/main.go` with a minimal `main` package that prints a placeholder message
 - Run `go mod tidy` to ensure the module is valid
@@ -34,7 +34,7 @@ Configure golangci-lint and formatting tools.
 Set up GitHub Actions for continuous integration.
 
 - Create `.github/workflows/ci.yml` with a workflow triggered on push and pull request to main
-- Steps: checkout, setup Go 1.24, `make verify`, `make build`
+- Steps: checkout, setup Go 1.25, `make verify`, `make build`
 - Ensure the workflow uses a matrix or single job as appropriate for this project size
 
 ## Task Group 5: Directory structure & .gitignore (small)

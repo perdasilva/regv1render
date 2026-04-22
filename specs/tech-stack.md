@@ -2,7 +2,7 @@
 
 ## Language & Runtime
 
-- **Language:** Go 1.24
+- **Language:** Go 1.25
 - **Module path:** `github.com/perdasilva/regv1render`
 
 ## Project Structure
@@ -75,5 +75,5 @@ Tool versions are pinned in `.bingo/` and auto-built on first use via `make`. Ad
 ## CI/CD
 
 - **GitHub Actions** workflow on push and pull request to main
-- Steps: checkout, setup Go 1.24, `make verify`, `make build`
+- Steps: checkout, setup Go 1.25, `make verify`, `make build`
 - No container build at this time
