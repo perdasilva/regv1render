@@ -44,10 +44,34 @@ func main() {
 
 ### CLI
 
-A showcase CLI tool is included for quick rendering from the command line:
+The `rv1` CLI renders bundles from the command line. It reads a bundle tar stream from stdin:
 
 ```bash
 go install github.com/perdasilva/regv1render/cmd/rv1@latest
+
+# Render from a container image using docker
+docker export $(docker create quay.io/my/bundle:v1 /bin/true) | rv1 render --install-namespace my-ns
+
+# Or using crane
+crane export quay.io/my/bundle:v1 - | rv1 render --install-namespace my-ns
+
+# Render with watch namespaces
+crane export quay.io/my/bundle:v1 - | rv1 render --install-namespace my-ns --watch-namespace ns1
+
+# Render with a config file
+crane export quay.io/my/bundle:v1 - | rv1 render --config render.yaml
+```
+
+Config file format (`render.yaml`):
+
+```yaml
+installNamespace: my-ns
+watchNamespaces:
+  - ns1
+providedAPIsClusterRoles: true
+deploymentConfig:
+  nodeSelector:
+    kubernetes.io/os: linux
 ```
 
 ## Development

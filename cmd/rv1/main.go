@@ -1,7 +1,25 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+)
+
+var version = "dev"
 
 func main() {
-	fmt.Println("rv1 - OLM registry+v1 bundle renderer")
+	root := &cobra.Command{
+		Use:     "rv1",
+		Short:   "OLM registry+v1 bundle renderer",
+		Version: version,
+	}
+
+	root.AddCommand(renderCmd())
+
+	if err := root.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 }
