@@ -31,6 +31,7 @@ import (
 	"github.com/perdasilva/regv1render/internal/bundle/source"
 	"github.com/perdasilva/regv1render/internal/render"
 	"github.com/perdasilva/regv1render/internal/render/registryv1"
+	"github.com/perdasilva/regv1render/internal/render/registryv1/generators"
 )
 
 // This is a helper for a regression test to make sure the renderer output doesn't change.
@@ -63,7 +64,7 @@ func main() {
 		watchNamespace   string
 		bundle           string
 		testCaseName     string
-		deploymentConfig *render.DeploymentConfig
+		opts             []render.Option
 	}{
 		{
 			name:             "AllNamespaces",
@@ -88,19 +89,11 @@ func main() {
 			bundle:           "webhook-operator.v0.0.5",
 			testCaseName:     "all-webhook-types",
 		}, {
-			// Test case for rendering all DeploymentConfig options:
-			// - Node selectors
-			// - Tolerations
-			// - Resource requirements
-			// - Env variables and EnvFrom source
-			// - Volumes/Volume mounts
-			// - Node, Pod, and PodAnti affinities
-			// - Annotations
 			name:             "WithDeploymentConfigOptions",
 			installNamespace: "argocd-system",
 			bundle:           "argocd-operator.v0.6.0",
 			testCaseName:     "with-deploymentconfig-options",
-			deploymentConfig: &render.DeploymentConfig{
+			opts: []render.Option{render.WithDeploymentConfig(&render.DeploymentConfig{
 				NodeSelector: map[string]string{
 					"kubernetes.io/os": "linux",
 				},
@@ -235,37 +228,47 @@ func main() {
 					"foo":     "bar",
 					"testkey": "testval",
 				},
-			},
+			})},
 		}, {
 			name:             "WithEmptyAffinityConfig",
 			installNamespace: "argocd-system",
 			bundle:           "argocd-operator.v0.6.0",
 			testCaseName:     "with-empty-affinity",
-			deploymentConfig: &render.DeploymentConfig{
+			opts: []render.Option{render.WithDeploymentConfig(&render.DeploymentConfig{
 				Affinity: &corev1.Affinity{},
-			},
+			})},
 		}, {
 			name:             "WithEmptyAffinitySubTypeConfig",
 			installNamespace: "argocd-system",
 			bundle:           "argocd-operator.v0.6.0",
 			testCaseName:     "with-empty-affinity-subtype",
-			deploymentConfig: &render.DeploymentConfig{
+			opts: []render.Option{render.WithDeploymentConfig(&render.DeploymentConfig{
 				Affinity: &corev1.Affinity{
 					NodeAffinity: &corev1.NodeAffinity{},
+				},
+			})},
+		}, {
+			name:             "WithProvidedAPIsClusterRoles",
+			installNamespace: "argocd-system",
+			bundle:           "argocd-operator.v0.6.0",
+			testCaseName:     "with-provided-apis-clusterroles",
+			opts: []render.Option{
+				func(o *render.Options) {
+					o.AdditionalGenerators = append(o.AdditionalGenerators, generators.BundleProvidedAPIsClusterRolesGenerator)
 				},
 			},
 		},
 	} {
 		bundlePath := filepath.Join(bundleRootDir, tc.bundle)
 		generatedManifestPath := filepath.Join(*outputRootDir, tc.bundle, tc.testCaseName)
-		if err := generateManifests(generatedManifestPath, bundlePath, tc.installNamespace, tc.watchNamespace, tc.deploymentConfig); err != nil {
+		if err := generateManifests(generatedManifestPath, bundlePath, tc.installNamespace, tc.watchNamespace, tc.opts); err != nil {
 			fmt.Printf("Error generating manifests: %v", err)
 			os.Exit(1)
 		}
 	}
 }
 
-func generateManifests(outputPath, bundleDir, installNamespace, watchNamespace string, deploymentConfig *render.DeploymentConfig) error {
+func generateManifests(outputPath, bundleDir, installNamespace, watchNamespace string, opts []render.Option) error {
 	// Parse bundleFS into RegistryV1
 	regv1, err := source.FromFS(os.DirFS(bundleDir)).GetBundle()
 	if err != nil {
@@ -274,11 +277,8 @@ func generateManifests(outputPath, bundleDir, installNamespace, watchNamespace s
 	}
 
 	// Convert RegistryV1 to plain manifests
-	opts := []render.Option{render.WithTargetNamespaces(watchNamespace)}
-	if deploymentConfig != nil {
-		opts = append(opts, render.WithDeploymentConfig(deploymentConfig))
-	}
-	objs, err := registryv1.Renderer.Render(regv1, installNamespace, opts...)
+	allOpts := append([]render.Option{render.WithTargetNamespaces(watchNamespace)}, opts...)
+	objs, err := registryv1.Renderer.Render(regv1, installNamespace, allOpts...)
 	if err != nil {
 		return fmt.Errorf("error converting registry+v1 bundle: %w", err)
 	}

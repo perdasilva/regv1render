@@ -1,0 +1,14 @@
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+  name: applicationsets.argoproj.io-v1alpha1-edit
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - applicationsets
+  verbs:
+  - create
+  - update
+  - patch
+  - delete

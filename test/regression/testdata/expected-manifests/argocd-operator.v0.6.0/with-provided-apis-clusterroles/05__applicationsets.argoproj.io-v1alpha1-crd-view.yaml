@@ -1,0 +1,13 @@
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+  name: applicationsets.argoproj.io-v1alpha1-crd-view
+rules:
+- apiGroups:
+  - apiextensions.k8s.io
+  resourceNames:
+  - applicationsets.argoproj.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get

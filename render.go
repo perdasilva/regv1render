@@ -6,6 +6,7 @@ import (
 	"github.com/perdasilva/regv1render/internal/bundle"
 	"github.com/perdasilva/regv1render/internal/render"
 	"github.com/perdasilva/regv1render/internal/render/registryv1"
+	"github.com/perdasilva/regv1render/internal/render/registryv1/generators"
 )
 
 // BundleRenderer validates and renders a registry+v1 bundle into plain
@@ -83,6 +84,16 @@ func WithCertificateProvider(provider CertificateProvider) Option {
 // WithDeploymentConfig sets deployment customization options.
 func WithDeploymentConfig(deploymentConfig *DeploymentConfig) Option {
 	return render.WithDeploymentConfig(deploymentConfig)
+}
+
+// WithProvidedAPIsClusterRoles enables generation of aggregated
+// admin/edit/view ClusterRoles for each owned CRD, matching the
+// OLMv0 (operator-lifecycle-manager) behavior. This is opt-in and
+// does not affect default rendering.
+func WithProvidedAPIsClusterRoles() Option {
+	return func(o *render.Options) {
+		o.AdditionalGenerators = append(o.AdditionalGenerators, generators.BundleProvidedAPIsClusterRolesGenerator)
+	}
 }
 
 // DefaultUniqueNameGenerator produces deterministic unique names by
