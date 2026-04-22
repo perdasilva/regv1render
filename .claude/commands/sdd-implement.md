@@ -1,9 +1,9 @@
-Implement the current phase based on its spec. Follow the plan, validate as you go.
+Implement the current epic based on its spec. Follow the plan, validate as you go.
 
 ## Step 1: Load context
 
 1. Identify the current branch: `git branch --show-current`
-2. Find the phase spec directory under `specs/` that matches the current branch/phase. Look for the most recent `specs/*-phase-*` directory.
+2. Find the spec directory under `specs/` that matches the current branch. Look for the most recent `specs/*-issue-*` directory.
 3. Read all three spec files:
    - `plan.md` — task groups and order of work
    - `requirements.md` — what must be built and constraints
@@ -16,7 +16,7 @@ For each task group in `plan.md`, in order:
 
 1. Announce which task group you're starting.
 2. Implement each task in the group.
-3. After completing the group, run `make check` (or the available subset if early phases haven't set up all targets yet).
+3. After completing the group, run `make check` (or the available subset if early epics haven't set up all targets yet).
 4. Fix any issues before moving to the next group.
 5. If a decision isn't covered by the spec, use AskUserQuestion to ask the user.
 
