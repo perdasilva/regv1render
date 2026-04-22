@@ -10,7 +10,41 @@ Extracted from [`operator-framework/operator-controller/internal/rukpak/render`]
 go get github.com/perdasilva/regv1render
 ```
 
+## Usage
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/perdasilva/regv1render"
+)
+
+func main() {
+	// Load a bundle from a directory on disk
+	bundleSource := regv1render.FromFS(os.DirFS("path/to/bundle"))
+	rv1, err := bundleSource.GetBundle()
+	if err != nil {
+		panic(err)
+	}
+
+	// Render the bundle to plain Kubernetes manifests
+	objects, err := regv1render.Render(rv1, "my-namespace",
+		regv1render.WithTargetNamespaces("watch-ns"),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Rendered %d objects\n", len(objects))
+}
+```
+
 ### CLI
+
+A showcase CLI tool is included for quick rendering from the command line:
 
 ```bash
 go install github.com/perdasilva/regv1render/cmd/rv1@latest

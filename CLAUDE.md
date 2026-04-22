@@ -8,7 +8,11 @@ A standalone Go library for rendering OLM registry+v1 bundles to plain Kubernete
 *.go           Public API at repo root — consumers import github.com/perdasilva/regv1render
 testdata/      Test fixtures (ignored by go build)
 internal/      Non-public implementation details (not importable by consumers)
+  bundle/      RegistryV1 bundle type, annotations, and source loading (fs.FS)
+  render/      Core rendering engine, utilities, validators, generators, cert providers
+  util/testutil/ Test helpers (bundlefs builder, CSV builder)
 cmd/rv1/       Showcase CLI tool for rendering bundles from the command line
+test/          Regression tests with golden-file fixtures
 .bingo/        Pinned dev tool versions (managed by bingo)
 specs/         SDD governing specs (mission, tech stack, conventions)
 ```
