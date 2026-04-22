@@ -62,7 +62,8 @@ type Options struct {
 	CertificateProvider CertificateProvider
 	// DeploymentConfig contains optional customizations to apply to CSV deployments.
 	// If nil, no customizations are applied.
-	DeploymentConfig *DeploymentConfig
+	DeploymentConfig     *DeploymentConfig
+	AdditionalGenerators []ResourceGenerator
 }
 
 func (o *Options) apply(opts ...Option) *Options {
@@ -142,7 +143,8 @@ func (r BundleRenderer) Render(rv1 bundle.RegistryV1, installNamespace string, o
 		return nil, fmt.Errorf("invalid option(s): %w", errors.Join(errs...))
 	}
 
-	objs, err := ResourceGenerators(r.ResourceGenerators).GenerateResources(&rv1, *genOpts)
+	allGenerators := append(r.ResourceGenerators, genOpts.AdditionalGenerators...)
+	objs, err := ResourceGenerators(allGenerators).GenerateResources(&rv1, *genOpts)
 	if err != nil {
 		return nil, err
 	}
