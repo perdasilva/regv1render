@@ -31,6 +31,7 @@ import (
 	"github.com/perdasilva/regv1render/internal/bundle/source"
 	"github.com/perdasilva/regv1render/internal/render"
 	"github.com/perdasilva/regv1render/internal/render/registryv1"
+	"github.com/perdasilva/regv1render/internal/render/registryv1/generators"
 )
 
 // This is a helper for a regression test to make sure the renderer output doesn't change.
@@ -64,6 +65,7 @@ func main() {
 		bundle           string
 		testCaseName     string
 		deploymentConfig *render.DeploymentConfig
+		extraOpts        []render.Option
 	}{
 		{
 			name:             "AllNamespaces",
@@ -254,18 +256,28 @@ func main() {
 					NodeAffinity: &corev1.NodeAffinity{},
 				},
 			},
+		}, {
+			name:             "WithProvidedAPIsClusterRoles",
+			installNamespace: "argocd-system",
+			bundle:           "argocd-operator.v0.6.0",
+			testCaseName:     "with-provided-apis-clusterroles",
+			extraOpts: []render.Option{
+				func(o *render.Options) {
+					o.AdditionalGenerators = append(o.AdditionalGenerators, generators.BundleProvidedAPIsClusterRolesGenerator)
+				},
+			},
 		},
 	} {
 		bundlePath := filepath.Join(bundleRootDir, tc.bundle)
 		generatedManifestPath := filepath.Join(*outputRootDir, tc.bundle, tc.testCaseName)
-		if err := generateManifests(generatedManifestPath, bundlePath, tc.installNamespace, tc.watchNamespace, tc.deploymentConfig); err != nil {
+		if err := generateManifests(generatedManifestPath, bundlePath, tc.installNamespace, tc.watchNamespace, tc.deploymentConfig, tc.extraOpts); err != nil {
 			fmt.Printf("Error generating manifests: %v", err)
 			os.Exit(1)
 		}
 	}
 }
 
-func generateManifests(outputPath, bundleDir, installNamespace, watchNamespace string, deploymentConfig *render.DeploymentConfig) error {
+func generateManifests(outputPath, bundleDir, installNamespace, watchNamespace string, deploymentConfig *render.DeploymentConfig, extraOpts []render.Option) error {
 	// Parse bundleFS into RegistryV1
 	regv1, err := source.FromFS(os.DirFS(bundleDir)).GetBundle()
 	if err != nil {
@@ -278,6 +290,7 @@ func generateManifests(outputPath, bundleDir, installNamespace, watchNamespace s
 	if deploymentConfig != nil {
 		opts = append(opts, render.WithDeploymentConfig(deploymentConfig))
 	}
+	opts = append(opts, extraOpts...)
 	objs, err := registryv1.Renderer.Render(regv1, installNamespace, opts...)
 	if err != nil {
 		return fmt.Errorf("error converting registry+v1 bundle: %w", err)

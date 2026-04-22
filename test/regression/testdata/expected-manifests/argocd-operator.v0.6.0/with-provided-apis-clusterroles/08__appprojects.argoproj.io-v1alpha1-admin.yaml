@@ -1,0 +1,11 @@
+metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+  name: appprojects.argoproj.io-v1alpha1-admin
+rules:
+- apiGroups:
+  - argoproj.io
+  resources:
+  - appprojects
+  verbs:
+  - '*'
