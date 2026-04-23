@@ -18,6 +18,7 @@ import (
 
 	"github.com/perdasilva/regv1render/internal/bundle/source"
 	"github.com/perdasilva/regv1render/internal/render"
+	"github.com/perdasilva/regv1render/internal/render/certproviders"
 	"github.com/perdasilva/regv1render/internal/render/registryv1"
 )
 
@@ -235,6 +236,14 @@ func main() {
 			testCaseName:     "with-provided-apis-clusterroles",
 			renderOpts: []render.RenderOption{
 				render.WithProvidedAPIsClusterRoles(),
+			},
+		}, {
+			name:             "WithSecretCertProvider",
+			installNamespace: "webhook-system",
+			bundle:           "webhook-operator.v0.0.5",
+			testCaseName:     "with-secret-cert-provider",
+			configureBuilder: func(b *render.RendererBuilder) {
+				b.WithCertificateProvider(certproviders.SecretCertProvider{})
 			},
 		},
 	} {

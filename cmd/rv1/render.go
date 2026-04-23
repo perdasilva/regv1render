@@ -28,13 +28,20 @@ const (
 	certProviderNone               = "none"
 	certProviderCertManager        = "cert-manager"
 	certProviderOpenShiftServiceCA = "openshift-service-ca"
+	certProviderSecret             = "secret"
 )
 
 type certificateProviderConfig struct {
-	Type string `json:"type"`
+	Type   string                `json:"type"`
+	Secret *secretProviderConfig `json:"secret,omitempty"`
 }
 
-var validCertProviderTypes = []string{certProviderNone, certProviderCertManager, certProviderOpenShiftServiceCA}
+type secretProviderConfig struct {
+	Cert string `json:"cert"`
+	Key  string `json:"key"`
+}
+
+var validCertProviderTypes = []string{certProviderNone, certProviderCertManager, certProviderOpenShiftServiceCA, certProviderSecret}
 
 func (c *certificateProviderConfig) validate() error {
 	if c == nil || c.Type == "" || c.Type == certProviderNone {
@@ -69,7 +76,7 @@ Namespace modes (controlled by --watch-namespace):
 The --config flag accepts a YAML file with renderer options:
   providedAPIsClusterRoles, deploymentConfig, and
   certificateProvider (type: cert-manager, openshift-service-ca,
-  or none).
+  secret, or none).
 
 Examples:
   # Render with AllNamespaces (default)
@@ -153,6 +160,13 @@ func buildRenderer(cfg renderConfig) *regv1render.Renderer {
 			b.WithCertificateProvider(regv1render.CertManagerProvider{})
 		case certProviderOpenShiftServiceCA:
 			b.WithCertificateProvider(regv1render.OpenShiftServiceCAProvider{})
+		case certProviderSecret:
+			provider := regv1render.SecretCertProvider{}
+			if p.Secret != nil {
+				provider.Cert = []byte(p.Secret.Cert)
+				provider.Key = []byte(p.Secret.Key)
+			}
+			b.WithCertificateProvider(provider)
 		}
 	}
 	return b.Build()
