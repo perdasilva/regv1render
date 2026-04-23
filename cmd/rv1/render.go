@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing/fstest"
 
@@ -25,22 +26,26 @@ type renderConfig struct {
 	CertificateProvider      *certificateProviderConfig    `json:"certificateProvider,omitempty"`
 }
 
+const (
+	certProviderNone               = "none"
+	certProviderCertManager        = "cert-manager"
+	certProviderOpenShiftServiceCA = "openshift-service-ca"
+)
+
 type certificateProviderConfig struct {
 	Type string `json:"type"`
 }
 
-var validCertProviderTypes = []string{"none", "cert-manager", "openshift-service-ca"}
+var validCertProviderTypes = []string{certProviderNone, certProviderCertManager, certProviderOpenShiftServiceCA}
 
 func (c *certificateProviderConfig) validate() error {
-	if c == nil || c.Type == "" || c.Type == "none" {
+	if c == nil || c.Type == "" || c.Type == certProviderNone {
 		return nil
 	}
-	for _, valid := range validCertProviderTypes {
-		if c.Type == valid {
-			return nil
-		}
+	if !slices.Contains(validCertProviderTypes, c.Type) {
+		return fmt.Errorf("unknown certificate provider type %q (valid types: %v)", c.Type, validCertProviderTypes)
 	}
-	return fmt.Errorf("unknown certificate provider type %q (valid types: %v)", c.Type, validCertProviderTypes)
+	return nil
 }
 
 func renderCmd() *cobra.Command {
@@ -149,9 +154,9 @@ func buildRenderOptions(cfg renderConfig) []regv1render.Option {
 	}
 	if p := cfg.CertificateProvider; p != nil {
 		switch p.Type {
-		case "cert-manager":
+		case certProviderCertManager:
 			opts = append(opts, regv1render.WithCertificateProvider(regv1render.CertManagerProvider{}))
-		case "openshift-service-ca":
+		case certProviderOpenShiftServiceCA:
 			opts = append(opts, regv1render.WithCertificateProvider(regv1render.OpenShiftServiceCAProvider{}))
 		}
 	}
