@@ -6,11 +6,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/perdasilva/rv1/internal/render"
 )
 
-var _ render.CertificateProvider = (*SecretCertProvider)(nil)
+var _ CertificateProvider = (*SecretCertProvider)(nil)
 
 // SecretCertProvider generates a kubernetes.io/tls Secret for
 // webhook TLS. If Cert and Key are empty, the Secret is created with
@@ -20,11 +18,11 @@ type SecretCertProvider struct {
 	Key  []byte
 }
 
-func (p SecretCertProvider) InjectCABundle(_ client.Object, _ render.CertificateProvisionerConfig) error {
+func (p SecretCertProvider) InjectCABundle(_ client.Object, _ CertificateProvisionerConfig) error {
 	return nil
 }
 
-func (p SecretCertProvider) AdditionalObjects(cfg render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
+func (p SecretCertProvider) AdditionalObjects(cfg CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
 	secret := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -51,8 +49,8 @@ func (p SecretCertProvider) AdditionalObjects(cfg render.CertificateProvisionerC
 	return []unstructured.Unstructured{u}, nil
 }
 
-func (p SecretCertProvider) GetCertSecretInfo(cfg render.CertificateProvisionerConfig) render.CertSecretInfo {
-	return render.CertSecretInfo{
+func (p SecretCertProvider) GetCertSecretInfo(cfg CertificateProvisionerConfig) CertSecretInfo {
+	return CertSecretInfo{
 		SecretName:     cfg.CertName,
 		CertificateKey: corev1.TLSCertKey,
 		PrivateKeyKey:  corev1.TLSPrivateKeyKey,

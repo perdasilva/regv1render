@@ -1,4 +1,4 @@
-package resourceutil_test
+package renderutil_test
 
 import (
 	"maps"
@@ -12,85 +12,84 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/rv1/internal/render"
-	"github.com/perdasilva/rv1/internal/render/resourceutil"
+	"github.com/perdasilva/rv1/internal/renderutil"
 )
 
 func Test_OptionsApplyToExecutesIgnoresNil(t *testing.T) {
-	opts := []resourceutil.ResourceCreatorOption{
+	opts := []renderutil.ResourceCreatorOption{
 		func(object client.Object) {
-			object.SetAnnotations(render.MergeMaps(object.GetAnnotations(), map[string]string{"h": ""}))
+			object.SetAnnotations(renderutil.MergeMaps(object.GetAnnotations(), map[string]string{"h": ""}))
 		},
 		nil,
 		func(object client.Object) {
-			object.SetAnnotations(render.MergeMaps(object.GetAnnotations(), map[string]string{"i": ""}))
+			object.SetAnnotations(renderutil.MergeMaps(object.GetAnnotations(), map[string]string{"i": ""}))
 		},
 		nil,
 	}
 
-	require.Nil(t, resourceutil.ResourceCreatorOptions(nil).ApplyTo(nil))
-	require.Nil(t, resourceutil.ResourceCreatorOptions([]resourceutil.ResourceCreatorOption{}).ApplyTo(nil))
+	require.Nil(t, renderutil.ResourceCreatorOptions(nil).ApplyTo(nil))
+	require.Nil(t, renderutil.ResourceCreatorOptions([]renderutil.ResourceCreatorOption{}).ApplyTo(nil))
 
-	obj := resourceutil.ResourceCreatorOptions(opts).ApplyTo(&corev1.ConfigMap{})
+	obj := renderutil.ResourceCreatorOptions(opts).ApplyTo(&corev1.ConfigMap{})
 	require.Equal(t, "hi", strings.Join(slices.Sorted(maps.Keys(obj.GetAnnotations())), ""))
 }
 
 func Test_CreateServiceAccount(t *testing.T) {
-	svc := resourceutil.CreateServiceAccountResource("my-sa", "my-namespace")
+	svc := renderutil.CreateServiceAccountResource("my-sa", "my-namespace")
 	require.NotNil(t, svc)
 	require.Equal(t, "my-sa", svc.Name)
 	require.Equal(t, "my-namespace", svc.Namespace)
 }
 
 func Test_CreateRole(t *testing.T) {
-	role := resourceutil.CreateRoleResource("my-role", "my-namespace")
+	role := renderutil.CreateRoleResource("my-role", "my-namespace")
 	require.NotNil(t, role)
 	require.Equal(t, "my-role", role.Name)
 	require.Equal(t, "my-namespace", role.Namespace)
 }
 
 func Test_CreateRoleBinding(t *testing.T) {
-	roleBinding := resourceutil.CreateRoleBindingResource("my-role-binding", "my-namespace")
+	roleBinding := renderutil.CreateRoleBindingResource("my-role-binding", "my-namespace")
 	require.NotNil(t, roleBinding)
 	require.Equal(t, "my-role-binding", roleBinding.Name)
 	require.Equal(t, "my-namespace", roleBinding.Namespace)
 }
 
 func Test_CreateClusterRole(t *testing.T) {
-	clusterRole := resourceutil.CreateClusterRoleResource("my-cluster-role")
+	clusterRole := renderutil.CreateClusterRoleResource("my-cluster-role")
 	require.NotNil(t, clusterRole)
 	require.Equal(t, "my-cluster-role", clusterRole.Name)
 }
 
 func Test_CreateClusterRoleBinding(t *testing.T) {
-	clusterRoleBinding := resourceutil.CreateClusterRoleBindingResource("my-cluster-role-binding")
+	clusterRoleBinding := renderutil.CreateClusterRoleBindingResource("my-cluster-role-binding")
 	require.NotNil(t, clusterRoleBinding)
 	require.Equal(t, "my-cluster-role-binding", clusterRoleBinding.Name)
 }
 
 func Test_CreateDeployment(t *testing.T) {
-	deployment := resourceutil.CreateDeploymentResource("my-deployment", "my-namespace")
+	deployment := renderutil.CreateDeploymentResource("my-deployment", "my-namespace")
 	require.NotNil(t, deployment)
 	require.Equal(t, "my-deployment", deployment.Name)
 	require.Equal(t, "my-namespace", deployment.Namespace)
 }
 
 func Test_CreateService(t *testing.T) {
-	svc := resourceutil.CreateServiceResource("my-service", "my-namespace")
+	svc := renderutil.CreateServiceResource("my-service", "my-namespace")
 	require.NotNil(t, svc)
 	require.Equal(t, "my-service", svc.Name)
 	require.Equal(t, "my-namespace", svc.Namespace)
 }
 
 func Test_CreateValidatingWebhookConfiguration(t *testing.T) {
-	wh := resourceutil.CreateValidatingWebhookConfigurationResource("my-validating-webhook-configuration", "my-namespace")
+	wh := renderutil.CreateValidatingWebhookConfigurationResource("my-validating-webhook-configuration", "my-namespace")
 	require.NotNil(t, wh)
 	require.Equal(t, "my-validating-webhook-configuration", wh.Name)
 	require.Equal(t, "my-namespace", wh.Namespace)
 }
 
 func Test_CreateMutatingWebhookConfiguration(t *testing.T) {
-	wh := resourceutil.CreateMutatingWebhookConfigurationResource("my-mutating-webhook-configuration", "my-namespace")
+	wh := renderutil.CreateMutatingWebhookConfigurationResource("my-mutating-webhook-configuration", "my-namespace")
 	require.NotNil(t, wh)
 	require.Equal(t, "my-mutating-webhook-configuration", wh.Name)
 	require.Equal(t, "my-namespace", wh.Namespace)
@@ -130,11 +129,11 @@ func Test_WithSubjects(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			roleBinding := resourceutil.CreateRoleBindingResource("my-role", "my-namespace", resourceutil.WithSubjects(tc.subjects...))
+			roleBinding := renderutil.CreateRoleBindingResource("my-role", "my-namespace", renderutil.WithSubjects(tc.subjects...))
 			require.NotNil(t, roleBinding)
 			require.Equal(t, roleBinding.Subjects, tc.subjects)
 
-			clusterRoleBinding := resourceutil.CreateClusterRoleBindingResource("my-role", resourceutil.WithSubjects(tc.subjects...))
+			clusterRoleBinding := renderutil.CreateClusterRoleBindingResource("my-role", renderutil.WithSubjects(tc.subjects...))
 			require.NotNil(t, clusterRoleBinding)
 			require.Equal(t, clusterRoleBinding.Subjects, tc.subjects)
 		})
@@ -178,11 +177,11 @@ func Test_WithRules(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			role := resourceutil.CreateRoleResource("my-role", "my-namespace", resourceutil.WithRules(tc.rules...))
+			role := renderutil.CreateRoleResource("my-role", "my-namespace", renderutil.WithRules(tc.rules...))
 			require.NotNil(t, role)
 			require.Equal(t, role.Rules, tc.rules)
 
-			clusterRole := resourceutil.CreateClusterRoleResource("my-role", resourceutil.WithRules(tc.rules...))
+			clusterRole := renderutil.CreateClusterRoleResource("my-role", renderutil.WithRules(tc.rules...))
 			require.NotNil(t, clusterRole)
 			require.Equal(t, clusterRole.Rules, tc.rules)
 		})
@@ -196,11 +195,11 @@ func Test_WithRoleRef(t *testing.T) {
 		Name:     "my-role",
 	}
 
-	roleBinding := resourceutil.CreateRoleBindingResource("my-role-binding", "my-namespace", resourceutil.WithRoleRef(roleRef))
+	roleBinding := renderutil.CreateRoleBindingResource("my-role-binding", "my-namespace", renderutil.WithRoleRef(roleRef))
 	require.NotNil(t, roleBinding)
 	require.Equal(t, roleRef, roleBinding.RoleRef)
 
-	clusterRoleBinding := resourceutil.CreateClusterRoleBindingResource("my-cluster-role-binding", resourceutil.WithRoleRef(roleRef))
+	clusterRoleBinding := renderutil.CreateClusterRoleBindingResource("my-cluster-role-binding", renderutil.WithRoleRef(roleRef))
 	require.NotNil(t, clusterRoleBinding)
 	require.Equal(t, roleRef, clusterRoleBinding.RoleRef)
 }
@@ -224,7 +223,7 @@ func Test_WithLabels(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			dep := resourceutil.CreateDeploymentResource("my-deployment", "my-namespace", resourceutil.WithLabels(tc.labels))
+			dep := renderutil.CreateDeploymentResource("my-deployment", "my-namespace", renderutil.WithLabels(tc.labels))
 			require.NotNil(t, dep)
 			require.Equal(t, tc.labels, dep.Labels)
 		})
@@ -232,7 +231,7 @@ func Test_WithLabels(t *testing.T) {
 }
 
 func Test_WithServiceSpec(t *testing.T) {
-	svc := resourceutil.CreateServiceResource("mysvc", "myns", resourceutil.WithServiceSpec(corev1.ServiceSpec{
+	svc := renderutil.CreateServiceResource("mysvc", "myns", renderutil.WithServiceSpec(corev1.ServiceSpec{
 		ClusterIP: "1.2.3.4",
 	}))
 	require.NotNil(t, svc)
@@ -242,8 +241,8 @@ func Test_WithServiceSpec(t *testing.T) {
 }
 
 func Test_WithValidatingWebhook(t *testing.T) {
-	wh := resourceutil.CreateValidatingWebhookConfigurationResource("mywh", "myns",
-		resourceutil.WithValidatingWebhooks(
+	wh := renderutil.CreateValidatingWebhookConfigurationResource("mywh", "myns",
+		renderutil.WithValidatingWebhooks(
 			admissionregistrationv1.ValidatingWebhook{
 				Name: "wh-one",
 			},
@@ -260,8 +259,8 @@ func Test_WithValidatingWebhook(t *testing.T) {
 }
 
 func Test_WithMutatingWebhook(t *testing.T) {
-	wh := resourceutil.CreateMutatingWebhookConfigurationResource("mywh", "myns",
-		resourceutil.WithMutatingWebhooks(
+	wh := renderutil.CreateMutatingWebhookConfigurationResource("mywh", "myns",
+		renderutil.WithMutatingWebhooks(
 			admissionregistrationv1.MutatingWebhook{
 				Name: "wh-one",
 			},

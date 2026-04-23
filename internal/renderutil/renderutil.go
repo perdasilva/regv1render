@@ -1,4 +1,4 @@
-package render
+package renderutil
 
 import (
 	"crypto/sha256"

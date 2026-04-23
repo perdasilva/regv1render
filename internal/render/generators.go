@@ -23,7 +23,8 @@ import (
 	registrybundle "github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
 	"github.com/perdasilva/rv1/internal/bundle"
-	"github.com/perdasilva/rv1/internal/render/resourceutil"
+	"github.com/perdasilva/rv1/internal/render/certproviders"
+	"github.com/perdasilva/rv1/internal/renderutil"
 )
 
 const (
@@ -63,19 +64,19 @@ func bundleCSVDeploymentGenerator(rv1 *bundle.RegistryV1, opts options) ([]clien
 
 	objs := make([]client.Object, 0, len(rv1.CSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs))
 	for _, depSpec := range rv1.CSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
-		annotations := MergeMaps(rv1.CSV.Annotations, depSpec.Spec.Template.Annotations)
+		annotations := renderutil.MergeMaps(rv1.CSV.Annotations, depSpec.Spec.Template.Annotations)
 		annotations["olm.targetNamespaces"] = strings.Join(opts.TargetNamespaces, ",")
 		depSpec.Spec.Template.Annotations = annotations
 		depSpec.Spec.RevisionHistoryLimit = ptr.To(int32(1))
 
-		deploymentResource := resourceutil.CreateDeploymentResource(
+		deploymentResource := renderutil.CreateDeploymentResource(
 			depSpec.Name,
 			opts.InstallNamespace,
-			resourceutil.WithDeploymentSpec(depSpec.Spec),
-			resourceutil.WithLabels(depSpec.Label),
+			renderutil.WithDeploymentSpec(depSpec.Spec),
+			renderutil.WithLabels(depSpec.Label),
 		)
 
-		secretInfo := CertProvisionerFor(depSpec.Name, opts).GetCertSecretInfo()
+		secretInfo := certProvisionerFor(depSpec.Name, opts).GetCertSecretInfo()
 		if webhookDeployments.Has(depSpec.Name) && secretInfo != nil {
 			ensureCorrectDeploymentCertVolumes(deploymentResource, *secretInfo)
 		}
@@ -105,12 +106,12 @@ func bundleCSVPermissionsGenerator(rv1 *bundle.RegistryV1, opts options) ([]clie
 			name := opts.UniqueNameGenerator(fmt.Sprintf("%s-%s", rv1.CSV.Name, saName), permission)
 
 			objs = append(objs,
-				resourceutil.CreateRoleResource(name, ns, resourceutil.WithRules(permission.Rules...)),
-				resourceutil.CreateRoleBindingResource(
+				renderutil.CreateRoleResource(name, ns, renderutil.WithRules(permission.Rules...)),
+				renderutil.CreateRoleBindingResource(
 					name,
 					ns,
-					resourceutil.WithSubjects(rbacv1.Subject{Kind: "ServiceAccount", Namespace: opts.InstallNamespace, Name: saName}),
-					resourceutil.WithRoleRef(rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "Role", Name: name}),
+					renderutil.WithSubjects(rbacv1.Subject{Kind: "ServiceAccount", Namespace: opts.InstallNamespace, Name: saName}),
+					renderutil.WithRoleRef(rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "Role", Name: name}),
 				),
 			)
 		}
@@ -140,11 +141,11 @@ func bundleCSVClusterPermissionsGenerator(rv1 *bundle.RegistryV1, opts options) 
 		saName := saNameOrDefault(permission.ServiceAccountName)
 		name := opts.UniqueNameGenerator(fmt.Sprintf("%s-%s", rv1.CSV.Name, saName), permission)
 		objs = append(objs,
-			resourceutil.CreateClusterRoleResource(name, resourceutil.WithRules(permission.Rules...)),
-			resourceutil.CreateClusterRoleBindingResource(
+			renderutil.CreateClusterRoleResource(name, renderutil.WithRules(permission.Rules...)),
+			renderutil.CreateClusterRoleBindingResource(
 				name,
-				resourceutil.WithSubjects(rbacv1.Subject{Kind: "ServiceAccount", Namespace: opts.InstallNamespace, Name: saName}),
-				resourceutil.WithRoleRef(rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "ClusterRole", Name: name}),
+				renderutil.WithSubjects(rbacv1.Subject{Kind: "ServiceAccount", Namespace: opts.InstallNamespace, Name: saName}),
+				renderutil.WithRoleRef(rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "ClusterRole", Name: name}),
 			),
 		)
 	}
@@ -168,7 +169,7 @@ func bundleCSVServiceAccountGenerator(rv1 *bundle.RegistryV1, opts options) ([]c
 	objs := make([]client.Object, 0, len(serviceAccountNames))
 	for _, serviceAccountName := range serviceAccountNames.UnsortedList() {
 		if serviceAccountName != "default" {
-			objs = append(objs, resourceutil.CreateServiceAccountResource(serviceAccountName, opts.InstallNamespace))
+			objs = append(objs, renderutil.CreateServiceAccountResource(serviceAccountName, opts.InstallNamespace))
 		}
 	}
 	return objs, nil
@@ -205,7 +206,7 @@ func bundleCRDGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, 
 				conversionWebhookPath = *cw.WebhookPath
 			}
 
-			certProvisioner := CertProvisionerFor(cw.DeploymentName, opts)
+			certProvisioner := certProvisionerFor(cw.DeploymentName, opts)
 			cp.Spec.Conversion = &apiextensionsv1.CustomResourceConversion{
 				Strategy: apiextensionsv1.WebhookConverter,
 				Webhook: &apiextensionsv1.WebhookConversion{
@@ -263,12 +264,12 @@ func bundleValidatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts optio
 		if wh.Type != v1alpha1.ValidatingAdmissionWebhook {
 			continue
 		}
-		certProvisioner := CertProvisionerFor(wh.DeploymentName, opts)
+		certProvisioner := certProvisionerFor(wh.DeploymentName, opts)
 		webhookName := strings.TrimSuffix(wh.GenerateName, "-")
-		webhookResource := resourceutil.CreateValidatingWebhookConfigurationResource(
+		webhookResource := renderutil.CreateValidatingWebhookConfigurationResource(
 			webhookName,
 			opts.InstallNamespace,
-			resourceutil.WithValidatingWebhooks(
+			renderutil.WithValidatingWebhooks(
 				admissionregistrationv1.ValidatingWebhook{
 					Name:                    webhookName,
 					Rules:                   wh.Rules,
@@ -309,12 +310,12 @@ func bundleMutatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts options
 		if wh.Type != v1alpha1.MutatingAdmissionWebhook {
 			continue
 		}
-		certProvisioner := CertProvisionerFor(wh.DeploymentName, opts)
+		certProvisioner := certProvisionerFor(wh.DeploymentName, opts)
 		webhookName := strings.TrimSuffix(wh.GenerateName, "-")
-		webhookResource := resourceutil.CreateMutatingWebhookConfigurationResource(
+		webhookResource := renderutil.CreateMutatingWebhookConfigurationResource(
 			webhookName,
 			opts.InstallNamespace,
-			resourceutil.WithMutatingWebhooks(
+			renderutil.WithMutatingWebhooks(
 				admissionregistrationv1.MutatingWebhook{
 					Name:                    webhookName,
 					Rules:                   wh.Rules,
@@ -375,11 +376,11 @@ func bundleDeploymentServiceResourceGenerator(rv1 *bundle.RegistryV1, opts optio
 			labelSelector = deploymentSpec.Spec.Selector.MatchLabels
 		}
 
-		certProvisioner := CertProvisionerFor(deploymentSpec.Name, opts)
-		serviceResource := resourceutil.CreateServiceResource(
+		certProvisioner := certProvisionerFor(deploymentSpec.Name, opts)
+		serviceResource := renderutil.CreateServiceResource(
 			certProvisioner.ServiceName,
 			opts.InstallNamespace,
-			resourceutil.WithServiceSpec(
+			renderutil.WithServiceSpec(
 				corev1.ServiceSpec{
 					Ports:    ports,
 					Selector: labelSelector,
@@ -405,7 +406,7 @@ func certProviderResourceGenerator(rv1 *bundle.RegistryV1, opts options) ([]clie
 
 	var objs []client.Object
 	for _, depName := range deploymentsWithWebhooks.UnsortedList() {
-		certCfg := CertProvisionerFor(depName, opts)
+		certCfg := certProvisionerFor(depName, opts)
 		certObjs, err := certCfg.AdditionalObjects()
 		if err != nil {
 			return nil, err
@@ -439,7 +440,7 @@ func getWebhookServicePort(wh v1alpha1.WebhookDescription) corev1.ServicePort {
 	}
 }
 
-func ensureCorrectDeploymentCertVolumes(dep *appsv1.Deployment, certSecretInfo CertSecretInfo) {
+func ensureCorrectDeploymentCertVolumes(dep *appsv1.Deployment, certSecretInfo certproviders.CertSecretInfo) {
 	volumesToRemove := sets.New[string]()
 	protectedVolumePaths := sets.New[string]()
 	certVolumes := make([]corev1.Volume, 0, len(certVolumeConfigs))

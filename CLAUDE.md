@@ -8,12 +8,12 @@ A standalone Go library for rendering OLM registry+v1 bundles to plain Kubernete
 *.go           Public API at repo root — consumers import github.com/perdasilva/rv1
 testdata/      Test fixtures (ignored by go build)
 internal/      Non-public implementation details (not importable by consumers)
-  bundle/      RegistryV1 bundle type, annotations, and source loading (fs.FS)
-  render/      Core rendering engine, generators, cert providers, resource builders
+  bundle/      Bundle type and source loading (fs.FS)
+  render/      Core rendering engine and generators
+    certproviders/ Certificate provider interface, types, implementations, and mock
     validator/     Bundle validation logic
-    resourceutil/  Kubernetes resource builder helpers (Deployment, Role, Service, etc.)
-    certproviders/ Certificate provider implementations (cert-manager, service-ca, secret)
-  util/testutil/ Test helpers (bundlefs builder, CSV builder)
+  renderutil/  Shared utilities (hashing, naming, unstructured conversion, resource builders)
+  testutil/    Test helpers (bundlefs builder, CSV builder, test fakes)
 cmd/rv1/       Showcase CLI tool for rendering bundles from the command line
 test/          Regression tests with golden-file fixtures
 .bingo/        Pinned dev tool versions (managed by bingo)
@@ -31,14 +31,15 @@ specs/         SDD governing specs (mission, tech stack, conventions)
 ## Build Commands
 
 ```
-make build    Build the rv1 CLI binary
-make test     Run all unit tests
-make lint     Run golangci-lint
-make fmt      Run gofmt and goimports
-make vet      Run go vet
-make tidy     Run go mod tidy
-make verify   Full quality gate (fmt + vet + lint + test)
-make clean    Remove build artifacts
+make build      Build the rv1 CLI binary
+make test       Run all unit tests
+make lint       Run golangci-lint
+make fmt        Run gofmt and goimports
+make vet        Run go vet
+make tidy       Run go mod tidy
+make generate   Run mockery to regenerate interface mocks
+make verify     Full quality gate (fmt + vet + lint + test)
+make clean      Remove build artifacts
 ```
 
 ## Epic-Based Workflow

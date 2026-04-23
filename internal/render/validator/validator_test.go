@@ -16,7 +16,7 @@ import (
 
 	"github.com/perdasilva/rv1/internal/bundle"
 	"github.com/perdasilva/rv1/internal/render/validator"
-	"github.com/perdasilva/rv1/internal/util/testutil/clusterserviceversion"
+	"github.com/perdasilva/rv1/internal/testutil/clusterserviceversion"
 )
 
 var v = validator.BundleValidator{}

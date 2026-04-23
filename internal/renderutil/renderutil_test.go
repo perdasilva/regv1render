@@ -1,4 +1,4 @@
-package render_test
+package renderutil_test
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/rv1/internal/render"
+	"github.com/perdasilva/rv1/internal/renderutil"
 )
 
 type unmarshalable struct{}
@@ -112,7 +112,7 @@ func TestDeepHashObject(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			test := func() {
-				hash := render.DeepHashObject(tc.obj)
+				hash := renderutil.DeepHashObject(tc.obj)
 				assert.Equal(t, tc.expectedHash, hash)
 			}
 
@@ -126,7 +126,7 @@ func TestDeepHashObject(t *testing.T) {
 }
 
 func Test_ObjectNameForBaseAndSuffix(t *testing.T) {
-	name := render.ObjectNameForBaseAndSuffix("my.object.thing.has.a.really.really.really.really.really.long.name", "suffix")
+	name := renderutil.ObjectNameForBaseAndSuffix("my.object.thing.has.a.really.really.really.really.really.long.name", "suffix")
 	require.Len(t, name, 63)
 	require.Equal(t, "my.object.thing.has.a.really.really.really.really.really-suffix", name)
 }
@@ -163,7 +163,7 @@ func Test_ToUnstructured(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			out, err := render.ToUnstructured(tc.obj)
+			out, err := renderutil.ToUnstructured(tc.obj)
 			if tc.err != nil {
 				require.Error(t, err)
 			} else {
@@ -202,7 +202,7 @@ func TestMergeMaps(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equalf(t, tc.expectMap, render.MergeMaps(tc.maps...), "maps did not merge as expected")
+			assert.Equalf(t, tc.expectMap, renderutil.MergeMaps(tc.maps...), "maps did not merge as expected")
 		})
 	}
 }
