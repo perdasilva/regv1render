@@ -1,6 +1,6 @@
 name: Epic
 description: Define a new epic for the project roadmap
-labels: ["epic", "ready"]
+labels: ["epic"]
 title: "[epic] "
 body:
   - type: markdown
