@@ -115,8 +115,8 @@ certificateProvider:
 	assert.Equal(t, "cert-manager", cfg.CertificateProvider.Type)
 	require.NoError(t, cfg.CertificateProvider.validate())
 
-	opts := buildRenderOptions(cfg, nil)
-	assert.NotEmpty(t, opts)
+	renderer := buildRenderer(cfg)
+	assert.NotNil(t, renderer)
 }
 
 func TestCertificateProviderConfig_OpenShiftServiceCA(t *testing.T) {
@@ -146,10 +146,8 @@ certificateProvider:
 	require.NoError(t, err)
 	require.NoError(t, cfg.CertificateProvider.validate())
 
-	opts := buildRenderOptions(cfg, nil)
-	for _, opt := range opts {
-		_ = opt
-	}
+	renderer := buildRenderer(cfg)
+	assert.NotNil(t, renderer)
 }
 
 func TestCertificateProviderConfig_Omitted(t *testing.T) {
