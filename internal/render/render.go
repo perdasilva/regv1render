@@ -13,16 +13,9 @@ import (
 	"github.com/perdasilva/regv1render/internal/bundle"
 )
 
-// BundleValidator validates a RegistryV1 bundle by executing a series of
-// checks on it and collecting any errors that were found
-type BundleValidator []func(v1 *bundle.RegistryV1) []error
-
-func (v BundleValidator) Validate(rv1 *bundle.RegistryV1) error {
-	errs := make([]error, 0, len(v))
-	for _, validator := range v {
-		errs = append(errs, validator(rv1)...)
-	}
-	return errors.Join(errs...)
+// BundleValidator validates a RegistryV1 bundle.
+type BundleValidator interface {
+	Validate(rv1 *bundle.RegistryV1) error
 }
 
 // ResourceGenerator generates resources given a registry+v1 bundle and options
@@ -126,8 +119,10 @@ type BundleRenderer struct {
 
 func (r BundleRenderer) Render(rv1 bundle.RegistryV1, installNamespace string, opts ...Option) ([]client.Object, error) {
 	// validate bundle
-	if err := r.BundleValidator.Validate(&rv1); err != nil {
-		return nil, err
+	if r.BundleValidator != nil {
+		if err := r.BundleValidator.Validate(&rv1); err != nil {
+			return nil, err
+		}
 	}
 
 	// generate bundle objects

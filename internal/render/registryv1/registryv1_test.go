@@ -15,34 +15,9 @@ import (
 	"github.com/perdasilva/regv1render/internal/render"
 	"github.com/perdasilva/regv1render/internal/render/registryv1"
 	"github.com/perdasilva/regv1render/internal/render/registryv1/generators"
-	"github.com/perdasilva/regv1render/internal/render/registryv1/validators"
 	. "github.com/perdasilva/regv1render/internal/util/testutil"
 	"github.com/perdasilva/regv1render/internal/util/testutil/clusterserviceversion"
 )
-
-func Test_BundleValidatorHasAllValidationFns(t *testing.T) {
-	expectedValidationFns := []func(v1 *bundle.RegistryV1) []error{
-		validators.CheckDeploymentSpecUniqueness,
-		validators.CheckDeploymentNameIsDNS1123SubDomain,
-		validators.CheckCRDResourceUniqueness,
-		validators.CheckOwnedCRDExistence,
-		validators.CheckPackageNameNotEmpty,
-		validators.CheckConversionWebhookSupport,
-		validators.CheckWebhookDeploymentReferentialIntegrity,
-		validators.CheckWebhookNameUniqueness,
-		validators.CheckWebhookNameIsDNS1123SubDomain,
-		validators.CheckConversionWebhookCRDReferenceUniqueness,
-		validators.CheckConversionWebhooksReferenceOwnedCRDs,
-		validators.CheckWebhookRules,
-		validators.CheckObjectSupport,
-	}
-	actualValidationFns := registryv1.BundleValidator
-
-	require.Len(t, actualValidationFns, len(expectedValidationFns))
-	for i := range expectedValidationFns {
-		require.Equal(t, reflect.ValueOf(expectedValidationFns[i]).Pointer(), reflect.ValueOf(actualValidationFns[i]).Pointer(), "bundle validator has unexpected validation function")
-	}
-}
 
 func Test_ResourceGeneratorsHasAllGenerators(t *testing.T) {
 	expectedGenerators := []render.ResourceGenerator{
@@ -85,15 +60,9 @@ func Test_Renderer_Success(t *testing.T) {
 	}
 
 	objs, err := registryv1.Renderer.Render(someBundle, "install-namespace")
-	t.Log("Check renderer returns objects and no errors")
 	require.NoError(t, err)
 	require.NotEmpty(t, objs)
-
-	t.Log("Check renderer returns a single object")
-	// bundle only contains a service - bundle csv is empty
 	require.Len(t, objs, 1)
-
-	t.Log("Check correct name and that the correct namespace was applied")
 	require.Equal(t, "my-service", objs[0].GetName())
 	require.Equal(t, "install-namespace", objs[0].GetNamespace())
 }
@@ -118,7 +87,6 @@ func Test_Renderer_Failure_UnsupportedKind(t *testing.T) {
 	}
 
 	objs, err := registryv1.Renderer.Render(someBundle, "install-namespace")
-	t.Log("Check renderer returns objects and no errors")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unsupported resource")
 	require.Empty(t, objs)

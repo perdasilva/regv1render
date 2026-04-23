@@ -14,9 +14,14 @@ import (
 // with all standard validators and generators.
 type BundleRenderer = render.BundleRenderer
 
-// BundleValidator is a collection of validation functions that check a
-// registry+v1 bundle for correctness before rendering.
+// BundleValidator validates a registry+v1 bundle for correctness
+// before rendering.
 type BundleValidator = render.BundleValidator
+
+// ValidationError represents a validation failure from a specific check.
+// Use errors.As to extract it from validation errors and inspect the
+// Check field to identify which validation rule failed.
+type ValidationError = render.ValidationError
 
 // ResourceGenerator is a function that generates Kubernetes resources
 // from a registry+v1 bundle and rendering options.

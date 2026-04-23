@@ -1,4 +1,4 @@
-package validators
+package validator
 
 import (
 	"cmp"
@@ -15,11 +15,48 @@ import (
 	regv1bundle "github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
 	"github.com/perdasilva/regv1render/internal/bundle"
+	"github.com/perdasilva/regv1render/internal/render"
 )
 
-// CheckDeploymentSpecUniqueness checks that each strategy deployment spec in the csv has a unique name.
+// BundleValidator validates a RegistryV1 bundle by running all checks.
+type BundleValidator struct{}
+
+type namedCheck struct {
+	name string
+	fn   func(*bundle.RegistryV1) []error
+}
+
+// Validate runs all validation checks and returns a joined error
+// wrapping each failure in a ValidationError with the check name.
+func (v BundleValidator) Validate(rv1 *bundle.RegistryV1) error {
+	checks := []namedCheck{
+		{"DeploymentSpecUniqueness", checkDeploymentSpecUniqueness},
+		{"DeploymentNameDNS1123", checkDeploymentNameIsDNS1123SubDomain},
+		{"CRDResourceUniqueness", checkCRDResourceUniqueness},
+		{"OwnedCRDExistence", checkOwnedCRDExistence},
+		{"PackageNameNotEmpty", checkPackageNameNotEmpty},
+		{"ConversionWebhookSupport", checkConversionWebhookSupport},
+		{"WebhookDeploymentReferentialIntegrity", checkWebhookDeploymentReferentialIntegrity},
+		{"WebhookNameUniqueness", checkWebhookNameUniqueness},
+		{"WebhookNameDNS1123", checkWebhookNameIsDNS1123SubDomain},
+		{"ConversionWebhookCRDReferenceUniqueness", checkConversionWebhookCRDReferenceUniqueness},
+		{"ConversionWebhooksReferenceOwnedCRDs", checkConversionWebhooksReferenceOwnedCRDs},
+		{"WebhookRules", checkWebhookRules},
+		{"ObjectSupport", checkObjectSupport},
+	}
+
+	var errs []error
+	for _, check := range checks {
+		for _, err := range check.fn(rv1) {
+			errs = append(errs, &render.ValidationError{Check: check.name, Err: err})
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// checkDeploymentSpecUniqueness checks that each strategy deployment spec in the csv has a unique name.
 // Errors are sorted by deployment name.
-func CheckDeploymentSpecUniqueness(rv1 *bundle.RegistryV1) []error {
+func checkDeploymentSpecUniqueness(rv1 *bundle.RegistryV1) []error {
 	deploymentNameSet := sets.Set[string]{}
 	duplicateDeploymentNames := sets.Set[string]{}
 	for _, dep := range rv1.CSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
@@ -38,7 +75,7 @@ func CheckDeploymentSpecUniqueness(rv1 *bundle.RegistryV1) []error {
 
 // CheckDeploymentNameIsDNS1123SubDomain checks each deployment strategy spec name complies with the Kubernetes
 // resource naming conversions
-func CheckDeploymentNameIsDNS1123SubDomain(rv1 *bundle.RegistryV1) []error {
+func checkDeploymentNameIsDNS1123SubDomain(rv1 *bundle.RegistryV1) []error {
 	deploymentNameErrMap := map[string][]string{}
 	for _, dep := range rv1.CSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
 		errs := validation.IsDNS1123Subdomain(dep.Name)
@@ -56,7 +93,7 @@ func CheckDeploymentNameIsDNS1123SubDomain(rv1 *bundle.RegistryV1) []error {
 }
 
 // CheckOwnedCRDExistence checks bundle owned custom resource definitions declared in the csv exist in the bundle
-func CheckOwnedCRDExistence(rv1 *bundle.RegistryV1) []error {
+func checkOwnedCRDExistence(rv1 *bundle.RegistryV1) []error {
 	crdsNames := sets.Set[string]{}
 	for _, crd := range rv1.CRDs {
 		crdsNames.Insert(crd.Name)
@@ -77,7 +114,7 @@ func CheckOwnedCRDExistence(rv1 *bundle.RegistryV1) []error {
 }
 
 // CheckCRDResourceUniqueness checks that the bundle CRD names are unique
-func CheckCRDResourceUniqueness(rv1 *bundle.RegistryV1) []error {
+func checkCRDResourceUniqueness(rv1 *bundle.RegistryV1) []error {
 	crdsNames := sets.Set[string]{}
 	duplicateCRDNames := sets.Set[string]{}
 	for _, crd := range rv1.CRDs {
@@ -95,7 +132,7 @@ func CheckCRDResourceUniqueness(rv1 *bundle.RegistryV1) []error {
 }
 
 // CheckPackageNameNotEmpty checks that PackageName is not empty
-func CheckPackageNameNotEmpty(rv1 *bundle.RegistryV1) []error {
+func checkPackageNameNotEmpty(rv1 *bundle.RegistryV1) []error {
 	if rv1.PackageName == "" {
 		return []error{errors.New("package name is empty")}
 	}
@@ -105,7 +142,7 @@ func CheckPackageNameNotEmpty(rv1 *bundle.RegistryV1) []error {
 // CheckConversionWebhookSupport checks that if the bundle cluster service version declares conversion webhook definitions,
 // that the bundle also only supports AllNamespaces install mode. This keeps parity with OLMv0 behavior for conversion webhooks,
 // https://github.com/operator-framework/operator-lifecycle-manager/blob/dfd0b2bea85038d3c0d65348bc812d297f16b8d2/pkg/controller/install/webhook.go#L193
-func CheckConversionWebhookSupport(rv1 *bundle.RegistryV1) []error {
+func checkConversionWebhookSupport(rv1 *bundle.RegistryV1) []error {
 	var conversionWebhookNames []string
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
 		if wh.Type == v1alpha1.ConversionWebhook {
@@ -137,7 +174,7 @@ func CheckConversionWebhookSupport(rv1 *bundle.RegistryV1) []error {
 // CheckWebhookDeploymentReferentialIntegrity checks that each webhook definition in the csv
 // references an existing strategy deployment spec. Errors are sorted by strategy deployment spec name,
 // webhook type, and webhook name.
-func CheckWebhookDeploymentReferentialIntegrity(rv1 *bundle.RegistryV1) []error {
+func checkWebhookDeploymentReferentialIntegrity(rv1 *bundle.RegistryV1) []error {
 	webhooksByDeployment := map[string][]v1alpha1.WebhookDescription{}
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
 		webhooksByDeployment[wh.DeploymentName] = append(webhooksByDeployment[wh.DeploymentName], wh)
@@ -171,7 +208,7 @@ func CheckWebhookDeploymentReferentialIntegrity(rv1 *bundle.RegistryV1) []error 
 // CheckWebhookNameUniqueness checks that each webhook definition of each type (validating, mutating, or conversion)
 // has a unique name. Webhooks of different types can have the same name. Errors are sorted by webhook type
 // and name.
-func CheckWebhookNameUniqueness(rv1 *bundle.RegistryV1) []error {
+func checkWebhookNameUniqueness(rv1 *bundle.RegistryV1) []error {
 	webhookNameSetByType := map[v1alpha1.WebhookAdmissionType]sets.Set[string]{}
 	duplicateWebhooksByType := map[v1alpha1.WebhookAdmissionType]sets.Set[string]{}
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
@@ -205,7 +242,7 @@ func CheckWebhookNameUniqueness(rv1 *bundle.RegistryV1) []error {
 
 // CheckConversionWebhooksReferenceOwnedCRDs checks defined conversion webhooks reference bundle owned CRDs.
 // Errors are sorted by webhook name and CRD name.
-func CheckConversionWebhooksReferenceOwnedCRDs(rv1 *bundle.RegistryV1) []error {
+func checkConversionWebhooksReferenceOwnedCRDs(rv1 *bundle.RegistryV1) []error {
 	//nolint:prealloc
 	var conversionWebhooks []v1alpha1.WebhookDescription
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
@@ -242,7 +279,7 @@ func CheckConversionWebhooksReferenceOwnedCRDs(rv1 *bundle.RegistryV1) []error {
 }
 
 // CheckConversionWebhookCRDReferenceUniqueness checks no two (or more) conversion webhooks reference the same CRD.
-func CheckConversionWebhookCRDReferenceUniqueness(rv1 *bundle.RegistryV1) []error {
+func checkConversionWebhookCRDReferenceUniqueness(rv1 *bundle.RegistryV1) []error {
 	// collect webhooks by crd
 	crdToWh := map[string][]string{}
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
@@ -269,7 +306,7 @@ func CheckConversionWebhookCRDReferenceUniqueness(rv1 *bundle.RegistryV1) []erro
 }
 
 // CheckWebhookNameIsDNS1123SubDomain checks each webhook configuration name complies with the Kubernetes resource naming conversions
-func CheckWebhookNameIsDNS1123SubDomain(rv1 *bundle.RegistryV1) []error {
+func checkWebhookNameIsDNS1123SubDomain(rv1 *bundle.RegistryV1) []error {
 	invalidWebhooksByType := map[v1alpha1.WebhookAdmissionType]map[string][]string{}
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
 		if _, ok := invalidWebhooksByType[wh.Type]; !ok {
@@ -324,7 +361,7 @@ var forbiddenAdmissionRegistrationResources = sets.New(
 // configurations.
 // See https://github.com/operator-framework/operator-lifecycle-manager/blob/ccf0c4c91f1e7673e87f3a18947f9a1f88d48438/pkg/controller/install/webhook.go#L19
 // for more details
-func CheckWebhookRules(rv1 *bundle.RegistryV1) []error {
+func checkWebhookRules(rv1 *bundle.RegistryV1) []error {
 	var errs []error
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
 		// Rules are not used for conversion webhooks
@@ -352,7 +389,7 @@ func CheckWebhookRules(rv1 *bundle.RegistryV1) []error {
 
 // CheckObjectSupport checks that the non-CRD and non-CSV bundle objects are supported by the
 // registry+v1 standard
-func CheckObjectSupport(rv1 *bundle.RegistryV1) []error {
+func checkObjectSupport(rv1 *bundle.RegistryV1) []error {
 	var errs []error
 	for _, obj := range rv1.Others {
 		kind := obj.GetObjectKind().GroupVersionKind().Kind

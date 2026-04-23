@@ -1,9 +1,10 @@
-package validators_test
+package validator_test
 
 import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -14,9 +15,50 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/render/registryv1/validators"
+	"github.com/perdasilva/regv1render/internal/render"
+	"github.com/perdasilva/regv1render/internal/render/registryv1/validator"
 	"github.com/perdasilva/regv1render/internal/util/testutil/clusterserviceversion"
 )
+
+var v = validator.BundleValidator{}
+
+func validationErrorsForCheck(err error, checkName string) []*render.ValidationError {
+	if err == nil {
+		return nil
+	}
+	var result []*render.ValidationError
+	for _, e := range unwrapAll(err) {
+		var ve *render.ValidationError
+		if errors.As(e, &ve) && ve.Check == checkName {
+			result = append(result, ve)
+		}
+	}
+	return result
+}
+
+func unwrapAll(err error) []error {
+	if joined, ok := err.(interface{ Unwrap() []error }); ok {
+		return joined.Unwrap()
+	}
+	return []error{err}
+}
+
+func requireCheckErrors(t *testing.T, err error, checkName string, expectedMsgs []string) {
+	t.Helper()
+	ves := validationErrorsForCheck(err, checkName)
+	require.Len(t, ves, len(expectedMsgs), "expected %d %s errors, got %d", len(expectedMsgs), checkName, len(ves))
+	for i, msg := range expectedMsgs {
+		assert.Equal(t, msg, ves[i].Err.Error(), "error %d for check %s", i, checkName)
+	}
+}
+
+func toMessages(errs []error) []string {
+	msgs := make([]string, len(errs))
+	for i, e := range errs {
+		msgs[i] = e.Error()
+	}
+	return msgs
+}
 
 func Test_CheckDeploymentSpecUniqueness(t *testing.T) {
 	for _, tc := range []struct {
@@ -66,8 +108,8 @@ func Test_CheckDeploymentSpecUniqueness(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckDeploymentSpecUniqueness(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "DeploymentSpecUniqueness", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -106,8 +148,8 @@ func Test_CheckDeploymentNameIsDNS1123SubDomain(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckDeploymentNameIsDNS1123SubDomain(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "DeploymentNameDNS1123", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -151,8 +193,8 @@ func Test_CRDResourceUniqueness(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validators.CheckCRDResourceUniqueness(tc.bundle)
-			require.Equal(t, tc.expectedErrs, err)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "CRDResourceUniqueness", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -206,8 +248,8 @@ func Test_CheckOwnedCRDExistence(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckOwnedCRDExistence(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "OwnedCRDExistence", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -232,8 +274,8 @@ func Test_CheckPackageNameNotEmpty(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckPackageNameNotEmpty(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "PackageNameNotEmpty", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -303,8 +345,8 @@ func Test_CheckWebhookSupport(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckConversionWebhookSupport(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "ConversionWebhookSupport", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -601,8 +643,8 @@ func Test_CheckWebhookRules(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckWebhookRules(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "WebhookRules", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -696,8 +738,8 @@ func Test_CheckWebhookDeploymentReferentialIntegrity(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckWebhookDeploymentReferentialIntegrity(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "WebhookDeploymentReferentialIntegrity", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -866,8 +908,8 @@ func Test_CheckWebhookNameUniqueness(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckWebhookNameUniqueness(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "WebhookNameUniqueness", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -976,8 +1018,8 @@ func Test_CheckConversionWebhooksReferenceOwnedCRDs(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckConversionWebhooksReferenceOwnedCRDs(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "ConversionWebhooksReferenceOwnedCRDs", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -1106,8 +1148,8 @@ func Test_CheckConversionWebhookCRDReferenceUniqueness(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckConversionWebhookCRDReferenceUniqueness(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "ConversionWebhookCRDReferenceUniqueness", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -1168,8 +1210,8 @@ func Test_CheckWebhookNameIsDNS1123SubDomain(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckWebhookNameIsDNS1123SubDomain(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "WebhookNameDNS1123", toMessages(tc.expectedErrs))
 		})
 	}
 }
@@ -1247,8 +1289,8 @@ func Test_CheckObjectSupport(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := validators.CheckObjectSupport(tc.bundle)
-			require.Equal(t, tc.expectedErrs, errs)
+			err := v.Validate(tc.bundle)
+			requireCheckErrors(t, err, "ObjectSupport", toMessages(tc.expectedErrs))
 		})
 	}
 }
