@@ -19,8 +19,6 @@ import (
 )
 
 type renderConfig struct {
-	InstallNamespace         string                        `json:"installNamespace"`
-	WatchNamespaces          []string                      `json:"watchNamespaces"`
 	ProvidedAPIsClusterRoles bool                          `json:"providedAPIsClusterRoles"`
 	DeploymentConfig         *regv1render.DeploymentConfig `json:"deploymentConfig,omitempty"`
 	CertificateProvider      *certificateProviderConfig    `json:"certificateProvider,omitempty"`
@@ -62,36 +60,38 @@ func renderCmd() *cobra.Command {
 renders it to plain Kubernetes manifests, and writes
 multi-document YAML to stdout.
 
-The --config flag accepts a YAML file with rendering options:
-  installNamespace, watchNamespaces, providedAPIsClusterRoles,
-  deploymentConfig, and certificateProvider (type: cert-manager,
-  openshift-service-ca, or none).
+Namespace modes (controlled by --watch-namespace):
+  AllNamespaces    Omit the flag (default when bundle supports it)
+  OwnNamespace    Set to the same value as --install-namespace
+  SingleNamespace  Set to a different namespace
+  MultiNamespace   Repeat the flag for each namespace
+
+The --config flag accepts a YAML file with renderer options:
+  providedAPIsClusterRoles, deploymentConfig, and
+  certificateProvider (type: cert-manager, openshift-service-ca,
+  or none).
 
 Examples:
-  # Render from a container image using crane
+  # Render with AllNamespaces (default)
   crane export quay.io/my/bundle:v1 - | rv1 render --install-namespace my-ns
 
-  # Render with watch namespaces
+  # Render with SingleNamespace
+  crane export quay.io/my/bundle:v1 - | rv1 render --install-namespace my-ns --watch-namespace target-ns
+
+  # Render with MultiNamespace
   crane export quay.io/my/bundle:v1 - | rv1 render --install-namespace my-ns --watch-namespace ns1 --watch-namespace ns2
 
   # Render with a config file
   crane export quay.io/my/bundle:v1 - | rv1 render --config render.yaml`,
 		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if installNamespace == "" {
+				return fmt.Errorf("--install-namespace is required")
+			}
+
 			cfg, err := loadConfig(configFile)
 			if err != nil {
 				return fmt.Errorf("loading config: %w", err)
-			}
-
-			if installNamespace != "" {
-				cfg.InstallNamespace = installNamespace
-			}
-			if len(watchNamespaces) > 0 {
-				cfg.WatchNamespaces = watchNamespaces
-			}
-
-			if cfg.InstallNamespace == "" {
-				return fmt.Errorf("--install-namespace is required (or set installNamespace in config file)")
 			}
 
 			if err := cfg.CertificateProvider.validate(); err != nil {
@@ -109,8 +109,8 @@ Examples:
 				return fmt.Errorf("parsing bundle: %w", err)
 			}
 
-			opts := buildRenderOptions(cfg)
-			objs, err := regv1render.Render(rv1, cfg.InstallNamespace, opts...)
+			opts := buildRenderOptions(cfg, watchNamespaces)
+			objs, err := regv1render.Render(rv1, installNamespace, opts...)
 			if err != nil {
 				return fmt.Errorf("rendering bundle: %w", err)
 			}
@@ -141,10 +141,10 @@ func loadConfig(path string) (renderConfig, error) {
 	return cfg, nil
 }
 
-func buildRenderOptions(cfg renderConfig) []regv1render.Option {
+func buildRenderOptions(cfg renderConfig, watchNamespaces []string) []regv1render.Option {
 	var opts []regv1render.Option
-	if len(cfg.WatchNamespaces) > 0 {
-		opts = append(opts, regv1render.WithTargetNamespaces(cfg.WatchNamespaces...))
+	if len(watchNamespaces) > 0 {
+		opts = append(opts, regv1render.WithTargetNamespaces(watchNamespaces...))
 	}
 	if cfg.ProvidedAPIsClusterRoles {
 		opts = append(opts, regv1render.WithProvidedAPIsClusterRoles())

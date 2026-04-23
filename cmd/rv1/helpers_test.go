@@ -14,11 +14,11 @@ func fromFSHelper(t *testing.T, fsys fs.FS) regv1render.BundleSource {
 	return regv1render.FromFS(fsys)
 }
 
-func renderBundle(source regv1render.BundleSource, cfg renderConfig) ([]client.Object, error) {
+func renderBundle(source regv1render.BundleSource, installNamespace string, watchNamespaces []string, cfg renderConfig) ([]client.Object, error) {
 	rv1, err := source.GetBundle()
 	if err != nil {
 		return nil, err
 	}
-	opts := buildRenderOptions(cfg)
-	return regv1render.Render(rv1, cfg.InstallNamespace, opts...)
+	opts := buildRenderOptions(cfg, watchNamespaces)
+	return regv1render.Render(rv1, installNamespace, opts...)
 }
