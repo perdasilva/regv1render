@@ -45,7 +45,7 @@ Once the user approves the epics:
    - `### Additional context` — optional extra info
 2. Create via:
    ```
-   gh issue create --title "[epic] <name>" --label "epic,ready" --body "<body following the sections above>"
+   gh issue create --title "[epic] <name>" --label "epic" --body "<body following the sections above>"
    ```
 
 ## Step 5: Summary
