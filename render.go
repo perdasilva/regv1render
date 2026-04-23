@@ -5,6 +5,7 @@ import (
 
 	"github.com/perdasilva/regv1render/internal/bundle"
 	"github.com/perdasilva/regv1render/internal/render"
+	"github.com/perdasilva/regv1render/internal/render/certproviders"
 	"github.com/perdasilva/regv1render/internal/render/registryv1"
 )
 
@@ -30,10 +31,16 @@ type ValidationError = render.ValidationError
 type RegistryV1 = bundle.RegistryV1
 
 // CertManagerProvider is a CertificateProvider that uses cert-manager.
-type CertManagerProvider = certManagerProvider
+type CertManagerProvider = certproviders.CertManagerCertificateProvider
 
 // OpenShiftServiceCAProvider is a CertificateProvider that uses OpenShift service-ca.
-type OpenShiftServiceCAProvider = openShiftServiceCAProvider
+type OpenShiftServiceCAProvider = certproviders.OpenshiftServiceCaCertificateProvider
+
+// SecretCertProvider is a CertificateProvider that generates a
+// kubernetes.io/tls Secret for webhook TLS. If Cert and Key are
+// empty, the Secret is created with empty data so users can
+// populate it externally (Vault, manual, etc.).
+type SecretCertProvider = certproviders.SecretCertProvider
 
 // RendererBuilder constructs a Renderer using fluent method chaining.
 type RendererBuilder struct {

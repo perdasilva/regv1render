@@ -67,13 +67,30 @@ crane export quay.io/my/bundle:v1 - | rv1 render --config render.yaml
 Config file format (`render.yaml`):
 
 ```yaml
-providedAPIsClusterRoles: true
 certificateProvider:
-  type: cert-manager  # or: openshift-service-ca, none
+  type: cert-manager  # or: openshift-service-ca, secret, none
 deploymentConfig:
   nodeSelector:
     kubernetes.io/os: linux
 ```
+
+The `secret` provider generates a `kubernetes.io/tls` Secret with optional cert/key data:
+
+```yaml
+certificateProvider:
+  type: secret
+  secret:
+    cert: |
+      -----BEGIN CERTIFICATE-----
+      ...
+      -----END CERTIFICATE-----
+    key: |
+      -----BEGIN PRIVATE KEY-----
+      ...
+      -----END PRIVATE KEY-----
+```
+
+If `cert` and `key` are omitted, an empty Secret is rendered so you can populate it externally (Vault, cert-manager ExternalSecret, etc.).
 
 ## OLMv0 Compatibility
 

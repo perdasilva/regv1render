@@ -192,3 +192,50 @@ func TestCertificateProviderConfig_CertManagerWithWebhookBundle(t *testing.T) {
 	output := buf.String()
 	assert.Contains(t, output, "apiVersion:")
 }
+
+func TestCertificateProviderConfig_Secret(t *testing.T) {
+	cfgContent := `
+certificateProvider:
+  type: secret
+`
+	cfgPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(cfgContent), 0600))
+
+	cfg, err := loadConfig(cfgPath)
+	require.NoError(t, err)
+	require.NotNil(t, cfg.CertificateProvider)
+	assert.Equal(t, "secret", cfg.CertificateProvider.Type)
+	require.NoError(t, cfg.CertificateProvider.validate())
+
+	renderer := buildRenderer(cfg)
+	assert.NotNil(t, renderer)
+}
+
+func TestCertificateProviderConfig_SecretWithData(t *testing.T) {
+	cfgContent := `
+certificateProvider:
+  type: secret
+  secret:
+    cert: |
+      -----BEGIN CERTIFICATE-----
+      test-cert-data
+      -----END CERTIFICATE-----
+    key: |
+      -----BEGIN PRIVATE KEY-----
+      test-key-data
+      -----END PRIVATE KEY-----
+`
+	cfgPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(cfgContent), 0600))
+
+	cfg, err := loadConfig(cfgPath)
+	require.NoError(t, err)
+	require.NotNil(t, cfg.CertificateProvider)
+	assert.Equal(t, "secret", cfg.CertificateProvider.Type)
+	require.NotNil(t, cfg.CertificateProvider.Secret)
+	assert.Contains(t, cfg.CertificateProvider.Secret.Cert, "test-cert-data")
+	assert.Contains(t, cfg.CertificateProvider.Secret.Key, "test-key-data")
+
+	renderer := buildRenderer(cfg)
+	assert.NotNil(t, renderer)
+}
