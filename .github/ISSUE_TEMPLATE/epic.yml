@@ -1,0 +1,68 @@
+name: Epic
+description: Define a new epic for the project roadmap
+labels: ["epic", "ready"]
+title: "[epic] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Define a unit of work for the project roadmap. Each epic becomes a branch, a spec, and a PR.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences describing what this epic delivers and why.
+      placeholder: "Add support for X so that consumers can Y."
+    validations:
+      required: true
+
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: Deliverables
+      description: |
+        Bullet list of concrete deliverables. Each item should be verifiable.
+        Use imperative mood ("Add X", "Port Y", "Create Z").
+      placeholder: |
+        - Add `WithFoo()` rendering option
+        - Port upstream tests for Foo
+        - Update README with Foo usage
+      value: |
+        -
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: |
+        List epic issues that must be closed before this one can start.
+        Use `#N` issue references. Leave empty if none.
+      placeholder: "#2, #3"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Estimated size of this epic.
+      options:
+        - small (1-2 files, <100 lines)
+        - medium (3-10 files, 100-500 lines)
+        - large (10+ files, 500+ lines)
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: |
+        Any extra information an agent or contributor needs: upstream references,
+        design constraints, related issues, links to code or docs.
+      placeholder: "See upstream implementation at https://github.com/..."
+    validations:
+      required: false
