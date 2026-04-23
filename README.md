@@ -69,6 +69,8 @@ installNamespace: my-ns
 watchNamespaces:
   - ns1
 providedAPIsClusterRoles: true
+certificateProvider:
+  type: cert-manager  # or: openshift-service-ca, none
 deploymentConfig:
   nodeSelector:
     kubernetes.io/os: linux
