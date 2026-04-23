@@ -4,6 +4,8 @@ A standalone Go library for rendering OLM registry+v1 bundles to plain Kubernete
 
 Extracted from [`operator-framework/operator-controller/internal/rukpak/render`](https://github.com/operator-framework/operator-controller) and compatible with [`operator-framework/operator-lifecycle-manager`](https://github.com/operator-framework/operator-lifecycle-manager) rendering behavior.
 
+![rv1 demo](assets/demo.gif)
+
 ## Install
 
 ```bash
@@ -65,9 +67,6 @@ crane export quay.io/my/bundle:v1 - | rv1 render --config render.yaml
 Config file format (`render.yaml`):
 
 ```yaml
-installNamespace: my-ns
-watchNamespaces:
-  - ns1
 providedAPIsClusterRoles: true
 certificateProvider:
   type: cert-manager  # or: openshift-service-ca, none
@@ -97,6 +96,42 @@ This generates 4 ClusterRoles per owned CRD:
 - `<name>-<version>-crd-view` — read access to the CRD definition itself
 
 These roles use Kubernetes [aggregated ClusterRoles](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#aggregated-clusterroles) so they're automatically included in the built-in admin/edit/view roles.
+
+## Namespace Modes
+
+The `--watch-namespace` flag controls which namespaces the operator watches. The behavior depends on the bundle's supported install modes:
+
+### AllNamespaces (default)
+
+When the bundle supports `AllNamespaces`, omitting `--watch-namespace` watches all namespaces:
+
+```bash
+crane export quay.io/my/bundle:v1 - | rv1 render --install-namespace ops
+```
+
+### OwnNamespace
+
+Watch only the install namespace — set `--watch-namespace` to the same value as `--install-namespace`:
+
+```bash
+crane export quay.io/my/bundle:v1 - | rv1 render --install-namespace ops --watch-namespace ops
+```
+
+### SingleNamespace
+
+Watch a single namespace different from the install namespace:
+
+```bash
+crane export quay.io/my/bundle:v1 - | rv1 render --install-namespace ops --watch-namespace target-ns
+```
+
+### MultiNamespace
+
+Watch multiple namespaces by repeating the flag:
+
+```bash
+crane export quay.io/my/bundle:v1 - | rv1 render --install-namespace ops --watch-namespace ns1 --watch-namespace ns2
+```
 
 ## Upstream Relationship
 

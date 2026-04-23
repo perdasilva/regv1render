@@ -20,9 +20,7 @@ func TestRenderCmd_BasicRendering(t *testing.T) {
 	require.NoError(t, err)
 
 	source := fromFSHelper(t, bundleFS)
-	objs, err := renderBundle(source, renderConfig{
-		InstallNamespace: "test-ns",
-	})
+	objs, err := renderBundle(source, "test-ns", nil, renderConfig{})
 	require.NoError(t, err)
 	assert.NotEmpty(t, objs)
 
@@ -44,17 +42,13 @@ func TestRenderCmd_WithWatchNamespace(t *testing.T) {
 	require.NoError(t, err)
 
 	source := fromFSHelper(t, bundleFS)
-	objs, err := renderBundle(source, renderConfig{
-		InstallNamespace: "test-ns",
-		WatchNamespaces:  []string{"watch-ns"},
-	})
+	objs, err := renderBundle(source, "test-ns", []string{"watch-ns"}, renderConfig{})
 	require.NoError(t, err)
 	assert.NotEmpty(t, objs)
 }
 
 func TestRenderCmd_WithConfigFile(t *testing.T) {
 	cfgContent := `
-installNamespace: config-ns
 providedAPIsClusterRoles: true
 `
 	cfgPath := filepath.Join(t.TempDir(), "config.yaml")
@@ -62,39 +56,7 @@ providedAPIsClusterRoles: true
 
 	cfg, err := loadConfig(cfgPath)
 	require.NoError(t, err)
-	assert.Equal(t, "config-ns", cfg.InstallNamespace)
 	assert.True(t, cfg.ProvidedAPIsClusterRoles)
-}
-
-func TestRenderCmd_FlagOverridesConfig(t *testing.T) {
-	cfgContent := `
-installNamespace: config-ns
-watchNamespaces:
-  - config-watch
-`
-	cfgPath := filepath.Join(t.TempDir(), "config.yaml")
-	require.NoError(t, os.WriteFile(cfgPath, []byte(cfgContent), 0600))
-
-	cfg, err := loadConfig(cfgPath)
-	require.NoError(t, err)
-
-	flagInstallNS := "flag-ns"
-	flagWatchNS := []string{"flag-watch"}
-
-	if flagInstallNS != "" {
-		cfg.InstallNamespace = flagInstallNS
-	}
-	if len(flagWatchNS) > 0 {
-		cfg.WatchNamespaces = flagWatchNS
-	}
-
-	assert.Equal(t, "flag-ns", cfg.InstallNamespace)
-	assert.Equal(t, []string{"flag-watch"}, cfg.WatchNamespaces)
-}
-
-func TestRenderCmd_MissingNamespaceError(t *testing.T) {
-	cfg := renderConfig{}
-	assert.Empty(t, cfg.InstallNamespace)
 }
 
 func TestRenderCmd_InvalidConfigFile(t *testing.T) {
@@ -126,8 +88,7 @@ func TestRenderCmd_ProvidedAPIsOption(t *testing.T) {
 	require.NoError(t, err)
 
 	source := fromFSHelper(t, bundleFS)
-	objs, err := renderBundle(source, renderConfig{
-		InstallNamespace:         "test-ns",
+	objs, err := renderBundle(source, "test-ns", nil, renderConfig{
 		ProvidedAPIsClusterRoles: true,
 	})
 	require.NoError(t, err)
@@ -142,7 +103,6 @@ func TestRenderCmd_ProvidedAPIsOption(t *testing.T) {
 
 func TestCertificateProviderConfig_CertManager(t *testing.T) {
 	cfgContent := `
-installNamespace: test-ns
 certificateProvider:
   type: cert-manager
 `
@@ -155,13 +115,12 @@ certificateProvider:
 	assert.Equal(t, "cert-manager", cfg.CertificateProvider.Type)
 	require.NoError(t, cfg.CertificateProvider.validate())
 
-	opts := buildRenderOptions(cfg)
+	opts := buildRenderOptions(cfg, nil)
 	assert.NotEmpty(t, opts)
 }
 
 func TestCertificateProviderConfig_OpenShiftServiceCA(t *testing.T) {
 	cfgContent := `
-installNamespace: test-ns
 certificateProvider:
   type: openshift-service-ca
 `
@@ -177,7 +136,6 @@ certificateProvider:
 
 func TestCertificateProviderConfig_None(t *testing.T) {
 	cfgContent := `
-installNamespace: test-ns
 certificateProvider:
   type: none
 `
@@ -188,16 +146,15 @@ certificateProvider:
 	require.NoError(t, err)
 	require.NoError(t, cfg.CertificateProvider.validate())
 
-	opts := buildRenderOptions(cfg)
-	// none should not add a cert provider option
+	opts := buildRenderOptions(cfg, nil)
 	for _, opt := range opts {
-		_ = opt // just verify no panic
+		_ = opt
 	}
 }
 
 func TestCertificateProviderConfig_Omitted(t *testing.T) {
 	cfgContent := `
-installNamespace: test-ns
+providedAPIsClusterRoles: false
 `
 	cfgPath := filepath.Join(t.TempDir(), "config.yaml")
 	require.NoError(t, os.WriteFile(cfgPath, []byte(cfgContent), 0600))
@@ -225,8 +182,7 @@ func TestCertificateProviderConfig_CertManagerWithWebhookBundle(t *testing.T) {
 	require.NoError(t, err)
 
 	source := fromFSHelper(t, bundleFS)
-	objs, err := renderBundle(source, renderConfig{
-		InstallNamespace: "test-ns",
+	objs, err := renderBundle(source, "test-ns", nil, renderConfig{
 		CertificateProvider: &certificateProviderConfig{
 			Type: "cert-manager",
 		},
@@ -236,7 +192,5 @@ func TestCertificateProviderConfig_CertManagerWithWebhookBundle(t *testing.T) {
 	var buf bytes.Buffer
 	require.NoError(t, writeYAML(&buf, objs))
 	output := buf.String()
-	// argocd bundle has no webhooks, so cert-manager won't add objects,
-	// but it should not error either
 	assert.Contains(t, output, "apiVersion:")
 }
