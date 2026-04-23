@@ -1,8 +1,6 @@
 package rv1
 
 import (
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/perdasilva/rv1/internal/bundle"
 	"github.com/perdasilva/rv1/internal/render"
 	"github.com/perdasilva/rv1/internal/render/certproviders"
@@ -91,13 +89,4 @@ func WithProvidedAPIsClusterRoles() RenderOption {
 // WithTargetNamespaces sets the namespaces the operator should watch.
 func WithTargetNamespaces(namespaces ...string) RenderOption {
 	return render.WithTargetNamespaces(namespaces...)
-}
-
-// DefaultRenderer is a pre-configured Renderer with default settings.
-var DefaultRenderer = NewRendererBuilder().Build()
-
-// Render is a convenience function that renders a registry+v1 bundle
-// using the DefaultRenderer.
-func Render(rv1 RegistryV1, installNamespace string, opts ...RenderOption) ([]client.Object, error) {
-	return DefaultRenderer.Render(rv1, installNamespace, opts...)
 }

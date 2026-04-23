@@ -54,7 +54,7 @@ func TestWithProvidedAPIsClusterRoles(t *testing.T) {
 	}
 
 	t.Run("without option produces no provided API roles", func(t *testing.T) {
-		objs, err := regv1.Render(rv1, "test-ns")
+		objs, err := regv1.NewRendererBuilder().Build().Render(rv1, "test-ns")
 		require.NoError(t, err)
 
 		for _, obj := range objs {
@@ -67,7 +67,7 @@ func TestWithProvidedAPIsClusterRoles(t *testing.T) {
 	})
 
 	t.Run("with option produces provided API roles", func(t *testing.T) {
-		objs, err := regv1.Render(rv1, "test-ns",
+		objs, err := regv1.NewRendererBuilder().Build().Render(rv1, "test-ns",
 			regv1.WithProvidedAPIsClusterRoles(),
 		)
 		require.NoError(t, err)

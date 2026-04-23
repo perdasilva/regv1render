@@ -26,14 +26,15 @@ import (
 
 func main() {
 	// Load a bundle from a directory on disk
-	bundleSource := rv1.FromFS(os.DirFS("path/to/bundle"))
-	rv1, err := bundleSource.GetBundle()
+	source := rv1.FromFS(os.DirFS("path/to/bundle"))
+	bundle, err := source.GetBundle()
 	if err != nil {
 		panic(err)
 	}
 
-	// Render the bundle to plain Kubernetes manifests
-	objects, err := rv1.Render(rv1, "my-namespace",
+	// Build a renderer and render the bundle
+	renderer := rv1.NewRendererBuilder().Build()
+	objects, err := renderer.Render(bundle, "my-namespace",
 		rv1.WithTargetNamespaces("watch-ns"),
 	)
 	if err != nil {
@@ -42,6 +43,17 @@ func main() {
 
 	fmt.Printf("Rendered %d objects\n", len(objects))
 }
+```
+
+The builder supports certificate providers for webhook TLS and deployment customization:
+
+```go
+renderer := rv1.NewRendererBuilder().
+    WithCertificateProvider(rv1.CertManagerProvider{}).
+    WithDeploymentConfig(&rv1.DeploymentConfig{
+        NodeSelector: map[string]string{"kubernetes.io/os": "linux"},
+    }).
+    Build()
 ```
 
 ### CLI
@@ -101,7 +113,8 @@ The library includes opt-in support for rendering behaviors from the original [o
 Use `WithProvidedAPIsClusterRoles()` to generate aggregated admin/edit/view ClusterRoles for each owned CRD, matching OLMv0 behavior:
 
 ```go
-objs, err := rv1.Render(rv1, "my-namespace",
+renderer := rv1.NewRendererBuilder().Build()
+objs, err := renderer.Render(bundle, "my-namespace",
     rv1.WithProvidedAPIsClusterRoles(),
 )
 ```

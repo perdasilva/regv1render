@@ -54,10 +54,11 @@ func exampleBundle() regv1.RegistryV1 {
 	}
 }
 
-func ExampleRender() {
-	rv1 := exampleBundle()
+func ExampleRenderer() {
+	bundle := exampleBundle()
 
-	objs, err := regv1.Render(rv1, "operators")
+	renderer := regv1.NewRendererBuilder().Build()
+	objs, err := renderer.Render(bundle, "operators")
 	if err != nil {
 		panic(err)
 	}
@@ -67,10 +68,11 @@ func ExampleRender() {
 	// Rendered 2 objects
 }
 
-func ExampleRender_withTargetNamespaces() {
-	rv1 := exampleBundle()
+func ExampleRenderer_withTargetNamespaces() {
+	bundle := exampleBundle()
 
-	objs, err := regv1.Render(rv1, "operators",
+	renderer := regv1.NewRendererBuilder().Build()
+	objs, err := renderer.Render(bundle, "operators",
 		regv1.WithTargetNamespaces("watch-ns"),
 	)
 	if err != nil {
@@ -82,10 +84,11 @@ func ExampleRender_withTargetNamespaces() {
 	// Rendered 2 objects
 }
 
-func ExampleRender_withProvidedAPIsClusterRoles() {
-	rv1 := exampleBundle()
+func ExampleRenderer_withProvidedAPIsClusterRoles() {
+	bundle := exampleBundle()
 
-	objs, err := regv1.Render(rv1, "operators",
+	renderer := regv1.NewRendererBuilder().Build()
+	objs, err := renderer.Render(bundle, "operators",
 		regv1.WithProvidedAPIsClusterRoles(),
 	)
 	if err != nil {
@@ -97,9 +100,23 @@ func ExampleRender_withProvidedAPIsClusterRoles() {
 	// Rendered 6 objects (includes provided API ClusterRoles)
 }
 
+func ExampleRenderer_withCertManager() {
+	bundle := exampleBundle()
+
+	renderer := regv1.NewRendererBuilder().
+		WithCertificateProvider(regv1.CertManagerProvider{}).
+		Build()
+	objs, err := renderer.Render(bundle, "operators")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Rendered %d objects\n", len(objs))
+	// Output:
+	// Rendered 2 objects
+}
+
 func ExampleFromFS() {
-	// Create an in-memory filesystem representing a bundle
-	// In practice, this would be os.DirFS("path/to/bundle")
 	bundleFS := fstest.MapFS{
 		"metadata/annotations.yaml": &fstest.MapFile{
 			Data: []byte(`annotations:
@@ -111,8 +128,6 @@ func ExampleFromFS() {
 	source := regv1.FromFS(bundleFS)
 	_, err := source.GetBundle()
 
-	// This will fail because the bundle is incomplete (no CSV),
-	// but it demonstrates the FromFS API
 	if err != nil {
 		fmt.Println("FromFS loaded bundle source (bundle parsing requires a valid CSV)")
 	}
@@ -123,7 +138,6 @@ func ExampleFromFS() {
 func ExampleFromBundle() {
 	rv1 := exampleBundle()
 
-	// Wrap an already-parsed bundle as a BundleSource
 	source := regv1.FromBundle(rv1)
 	bundle, err := source.GetBundle()
 	if err != nil {
@@ -135,18 +149,4 @@ func ExampleFromBundle() {
 	// Output:
 	// Bundle: my-operator
 	// CSV: my-operator.v1.0.0
-}
-
-func ExampleRendererBuilder() {
-	rv1 := exampleBundle()
-
-	// Use NewRendererBuilder for full control
-	objs, err := regv1.NewRendererBuilder().Build().Render(rv1, "operators")
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("Rendered %d objects using DefaultRenderer\n", len(objs))
-	// Output:
-	// Rendered 2 objects using DefaultRenderer
 }
