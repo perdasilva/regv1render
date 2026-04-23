@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing/fstest"
 
@@ -22,6 +23,29 @@ type renderConfig struct {
 	WatchNamespaces          []string                      `json:"watchNamespaces"`
 	ProvidedAPIsClusterRoles bool                          `json:"providedAPIsClusterRoles"`
 	DeploymentConfig         *regv1render.DeploymentConfig `json:"deploymentConfig,omitempty"`
+	CertificateProvider      *certificateProviderConfig    `json:"certificateProvider,omitempty"`
+}
+
+const (
+	certProviderNone               = "none"
+	certProviderCertManager        = "cert-manager"
+	certProviderOpenShiftServiceCA = "openshift-service-ca"
+)
+
+type certificateProviderConfig struct {
+	Type string `json:"type"`
+}
+
+var validCertProviderTypes = []string{certProviderNone, certProviderCertManager, certProviderOpenShiftServiceCA}
+
+func (c *certificateProviderConfig) validate() error {
+	if c == nil || c.Type == "" || c.Type == certProviderNone {
+		return nil
+	}
+	if !slices.Contains(validCertProviderTypes, c.Type) {
+		return fmt.Errorf("unknown certificate provider type %q (valid types: %v)", c.Type, validCertProviderTypes)
+	}
+	return nil
 }
 
 func renderCmd() *cobra.Command {
@@ -37,6 +61,11 @@ func renderCmd() *cobra.Command {
 		Long: `Reads a registry+v1 bundle as a tar stream from stdin,
 renders it to plain Kubernetes manifests, and writes
 multi-document YAML to stdout.
+
+The --config flag accepts a YAML file with rendering options:
+  installNamespace, watchNamespaces, providedAPIsClusterRoles,
+  deploymentConfig, and certificateProvider (type: cert-manager,
+  openshift-service-ca, or none).
 
 Examples:
   # Render from a container image using crane
@@ -63,6 +92,10 @@ Examples:
 
 			if cfg.InstallNamespace == "" {
 				return fmt.Errorf("--install-namespace is required (or set installNamespace in config file)")
+			}
+
+			if err := cfg.CertificateProvider.validate(); err != nil {
+				return fmt.Errorf("invalid config: %w", err)
 			}
 
 			bundleFS, err := tarToFS(os.Stdin)
@@ -118,6 +151,14 @@ func buildRenderOptions(cfg renderConfig) []regv1render.Option {
 	}
 	if cfg.DeploymentConfig != nil {
 		opts = append(opts, regv1render.WithDeploymentConfig(cfg.DeploymentConfig))
+	}
+	if p := cfg.CertificateProvider; p != nil {
+		switch p.Type {
+		case certProviderCertManager:
+			opts = append(opts, regv1render.WithCertificateProvider(regv1render.CertManagerProvider{}))
+		case certProviderOpenShiftServiceCA:
+			opts = append(opts, regv1render.WithCertificateProvider(regv1render.OpenShiftServiceCAProvider{}))
+		}
 	}
 	return opts
 }

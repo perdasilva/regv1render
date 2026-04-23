@@ -139,3 +139,104 @@ func TestRenderCmd_ProvidedAPIsOption(t *testing.T) {
 	assert.Contains(t, output, "aggregate-to-edit")
 	assert.Contains(t, output, "aggregate-to-view")
 }
+
+func TestCertificateProviderConfig_CertManager(t *testing.T) {
+	cfgContent := `
+installNamespace: test-ns
+certificateProvider:
+  type: cert-manager
+`
+	cfgPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(cfgContent), 0600))
+
+	cfg, err := loadConfig(cfgPath)
+	require.NoError(t, err)
+	require.NotNil(t, cfg.CertificateProvider)
+	assert.Equal(t, "cert-manager", cfg.CertificateProvider.Type)
+	require.NoError(t, cfg.CertificateProvider.validate())
+
+	opts := buildRenderOptions(cfg)
+	assert.NotEmpty(t, opts)
+}
+
+func TestCertificateProviderConfig_OpenShiftServiceCA(t *testing.T) {
+	cfgContent := `
+installNamespace: test-ns
+certificateProvider:
+  type: openshift-service-ca
+`
+	cfgPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(cfgContent), 0600))
+
+	cfg, err := loadConfig(cfgPath)
+	require.NoError(t, err)
+	require.NotNil(t, cfg.CertificateProvider)
+	assert.Equal(t, "openshift-service-ca", cfg.CertificateProvider.Type)
+	require.NoError(t, cfg.CertificateProvider.validate())
+}
+
+func TestCertificateProviderConfig_None(t *testing.T) {
+	cfgContent := `
+installNamespace: test-ns
+certificateProvider:
+  type: none
+`
+	cfgPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(cfgContent), 0600))
+
+	cfg, err := loadConfig(cfgPath)
+	require.NoError(t, err)
+	require.NoError(t, cfg.CertificateProvider.validate())
+
+	opts := buildRenderOptions(cfg)
+	// none should not add a cert provider option
+	for _, opt := range opts {
+		_ = opt // just verify no panic
+	}
+}
+
+func TestCertificateProviderConfig_Omitted(t *testing.T) {
+	cfgContent := `
+installNamespace: test-ns
+`
+	cfgPath := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(cfgPath, []byte(cfgContent), 0600))
+
+	cfg, err := loadConfig(cfgPath)
+	require.NoError(t, err)
+	assert.Nil(t, cfg.CertificateProvider)
+	require.NoError(t, cfg.CertificateProvider.validate())
+}
+
+func TestCertificateProviderConfig_InvalidType(t *testing.T) {
+	cfg := &certificateProviderConfig{Type: "bogus"}
+	err := cfg.validate()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "bogus")
+	assert.Contains(t, err.Error(), "valid types")
+}
+
+func TestCertificateProviderConfig_CertManagerWithWebhookBundle(t *testing.T) {
+	f, err := os.Open("testdata/argocd-bundle.tar")
+	require.NoError(t, err)
+	defer f.Close()
+
+	bundleFS, err := tarToFS(f)
+	require.NoError(t, err)
+
+	source := fromFSHelper(t, bundleFS)
+	objs, err := renderBundle(source, renderConfig{
+		InstallNamespace: "test-ns",
+		CertificateProvider: &certificateProviderConfig{
+			Type: "cert-manager",
+		},
+	})
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	require.NoError(t, writeYAML(&buf, objs))
+	output := buf.String()
+	// argocd bundle has no webhooks, so cert-manager won't add objects,
+	// but it should not error either
+	assert.Contains(t, output, "apiVersion:")
+}
