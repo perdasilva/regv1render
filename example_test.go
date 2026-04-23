@@ -1,4 +1,4 @@
-package regv1render_test
+package rv1_test
 
 import (
 	"fmt"
@@ -9,11 +9,11 @@ import (
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	"github.com/perdasilva/regv1render"
+	regv1 "github.com/perdasilva/rv1"
 )
 
-func exampleBundle() regv1render.RegistryV1 {
-	return regv1render.RegistryV1{
+func exampleBundle() regv1.RegistryV1 {
+	return regv1.RegistryV1{
 		PackageName: "my-operator",
 		CSV: v1alpha1.ClusterServiceVersion{
 			ObjectMeta: metav1.ObjectMeta{Name: "my-operator.v1.0.0"},
@@ -57,7 +57,7 @@ func exampleBundle() regv1render.RegistryV1 {
 func ExampleRender() {
 	rv1 := exampleBundle()
 
-	objs, err := regv1render.Render(rv1, "operators")
+	objs, err := regv1.Render(rv1, "operators")
 	if err != nil {
 		panic(err)
 	}
@@ -70,8 +70,8 @@ func ExampleRender() {
 func ExampleRender_withTargetNamespaces() {
 	rv1 := exampleBundle()
 
-	objs, err := regv1render.Render(rv1, "operators",
-		regv1render.WithTargetNamespaces("watch-ns"),
+	objs, err := regv1.Render(rv1, "operators",
+		regv1.WithTargetNamespaces("watch-ns"),
 	)
 	if err != nil {
 		panic(err)
@@ -85,8 +85,8 @@ func ExampleRender_withTargetNamespaces() {
 func ExampleRender_withProvidedAPIsClusterRoles() {
 	rv1 := exampleBundle()
 
-	objs, err := regv1render.Render(rv1, "operators",
-		regv1render.WithProvidedAPIsClusterRoles(),
+	objs, err := regv1.Render(rv1, "operators",
+		regv1.WithProvidedAPIsClusterRoles(),
 	)
 	if err != nil {
 		panic(err)
@@ -108,7 +108,7 @@ func ExampleFromFS() {
 		},
 	}
 
-	source := regv1render.FromFS(bundleFS)
+	source := regv1.FromFS(bundleFS)
 	_, err := source.GetBundle()
 
 	// This will fail because the bundle is incomplete (no CSV),
@@ -124,7 +124,7 @@ func ExampleFromBundle() {
 	rv1 := exampleBundle()
 
 	// Wrap an already-parsed bundle as a BundleSource
-	source := regv1render.FromBundle(rv1)
+	source := regv1.FromBundle(rv1)
 	bundle, err := source.GetBundle()
 	if err != nil {
 		panic(err)
@@ -141,7 +141,7 @@ func ExampleRendererBuilder() {
 	rv1 := exampleBundle()
 
 	// Use NewRendererBuilder for full control
-	objs, err := regv1render.NewRendererBuilder().Build().Render(rv1, "operators")
+	objs, err := regv1.NewRendererBuilder().Build().Render(rv1, "operators")
 	if err != nil {
 		panic(err)
 	}

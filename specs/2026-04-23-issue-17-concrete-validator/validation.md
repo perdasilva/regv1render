@@ -31,6 +31,6 @@
 
 ## Manual Verification
 
-1. `go doc github.com/perdasilva/regv1render ValidationError` — verify type is documented
-2. `go doc github.com/perdasilva/regv1render` — verify `BundleValidator` is gone
+1. `go doc github.com/perdasilva/rv1 ValidationError` — verify type is documented
+2. `go doc github.com/perdasilva/rv1` — verify `BundleValidator` is gone
 3. Run `go test -v ./internal/render/registryv1/validator/` — verify tests pass and use `Validate()`

@@ -29,6 +29,6 @@
 
 ## Manual Verification
 
-1. Run `go doc github.com/perdasilva/regv1render WithProvidedAPIsClusterRoles` — verify godoc exists
+1. Run `go doc github.com/perdasilva/rv1 WithProvidedAPIsClusterRoles` — verify godoc exists
 2. Run `go test -v -run ProvidedAPI ./...` — verify new tests pass
 3. Run existing regression tests — verify no golden file changes

@@ -22,8 +22,8 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	registrybundle "github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
-	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/render/resourceutil"
+	"github.com/perdasilva/rv1/internal/bundle"
+	"github.com/perdasilva/rv1/internal/render/resourceutil"
 )
 
 const (

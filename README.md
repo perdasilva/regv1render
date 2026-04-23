@@ -1,4 +1,4 @@
-# regv1render
+# rv1
 
 A standalone Go library for rendering OLM registry+v1 bundles to plain Kubernetes manifests.
 
@@ -9,7 +9,7 @@ Extracted from [`operator-framework/operator-controller/internal/rukpak/render`]
 ## Install
 
 ```bash
-go get github.com/perdasilva/regv1render
+go get github.com/perdasilva/rv1
 ```
 
 ## Usage
@@ -21,20 +21,20 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/perdasilva/regv1render"
+	"github.com/perdasilva/rv1"
 )
 
 func main() {
 	// Load a bundle from a directory on disk
-	bundleSource := regv1render.FromFS(os.DirFS("path/to/bundle"))
+	bundleSource := rv1.FromFS(os.DirFS("path/to/bundle"))
 	rv1, err := bundleSource.GetBundle()
 	if err != nil {
 		panic(err)
 	}
 
 	// Render the bundle to plain Kubernetes manifests
-	objects, err := regv1render.Render(rv1, "my-namespace",
-		regv1render.WithTargetNamespaces("watch-ns"),
+	objects, err := rv1.Render(rv1, "my-namespace",
+		rv1.WithTargetNamespaces("watch-ns"),
 	)
 	if err != nil {
 		panic(err)
@@ -49,7 +49,7 @@ func main() {
 The `rv1` CLI renders bundles from the command line. It reads a bundle tar stream from stdin:
 
 ```bash
-go install github.com/perdasilva/regv1render/cmd/rv1@latest
+go install github.com/perdasilva/rv1/cmd/rv1@latest
 
 # Render from a container image using docker
 docker export $(docker create quay.io/my/bundle:v1 /bin/true) | rv1 render --install-namespace my-ns
@@ -101,8 +101,8 @@ The library includes opt-in support for rendering behaviors from the original [o
 Use `WithProvidedAPIsClusterRoles()` to generate aggregated admin/edit/view ClusterRoles for each owned CRD, matching OLMv0 behavior:
 
 ```go
-objs, err := regv1render.Render(rv1, "my-namespace",
-    regv1render.WithProvidedAPIsClusterRoles(),
+objs, err := rv1.Render(rv1, "my-namespace",
+    rv1.WithProvidedAPIsClusterRoles(),
 )
 ```
 

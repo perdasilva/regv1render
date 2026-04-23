@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/regv1render/internal/render"
+	"github.com/perdasilva/rv1/internal/render"
 )
 
 type unmarshalable struct{}

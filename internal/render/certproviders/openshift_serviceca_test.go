@@ -10,8 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/regv1render/internal/render"
-	"github.com/perdasilva/regv1render/internal/render/certproviders"
+	"github.com/perdasilva/rv1/internal/render"
+	"github.com/perdasilva/rv1/internal/render/certproviders"
 )
 
 func Test_OpenshiftServiceCAProvider_InjectCABundle(t *testing.T) {

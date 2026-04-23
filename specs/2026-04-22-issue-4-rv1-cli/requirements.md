@@ -30,4 +30,4 @@
 
 - `github.com/spf13/cobra` (CLI framework, already a transitive dep)
 - `sigs.k8s.io/yaml` (config file parsing, already a dep)
-- `regv1render` public API (FromFS, Render, With* options)
+- `rv1` public API (FromFS, Render, With* options)

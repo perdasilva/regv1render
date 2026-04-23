@@ -6,15 +6,15 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/regv1render"
+	"github.com/perdasilva/rv1"
 )
 
-func fromFSHelper(t *testing.T, fsys fs.FS) regv1render.BundleSource {
+func fromFSHelper(t *testing.T, fsys fs.FS) rv1.BundleSource {
 	t.Helper()
-	return regv1render.FromFS(fsys)
+	return rv1.FromFS(fsys)
 }
 
-func renderBundle(source regv1render.BundleSource, installNamespace string, watchNamespaces []string, cfg renderConfig) ([]client.Object, error) {
+func renderBundle(source rv1.BundleSource, installNamespace string, watchNamespaces []string, cfg renderConfig) ([]client.Object, error) {
 	rv1, err := source.GetBundle()
 	if err != nil {
 		return nil, err

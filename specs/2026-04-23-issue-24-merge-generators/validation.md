@@ -33,6 +33,6 @@
 
 ## Manual Verification
 
-1. `go doc github.com/perdasilva/regv1render` — no `ResourceGenerator` types
+1. `go doc github.com/perdasilva/rv1` — no `ResourceGenerator` types
 2. Run `make build && bin/rv1 --version` — CLI works
 3. Run regression tests — golden files unchanged

@@ -1,4 +1,4 @@
-module github.com/perdasilva/regv1render
+module github.com/perdasilva/rv1
 
 go 1.25.7
 

@@ -50,7 +50,7 @@ Create the thin public API at the repo root that re-exports the key types and pr
 - Export cert provider types (`CertManagerProvider`, `OpenShiftServiceCAProvider`)
 - Keep internal implementation details (individual generators, validators, cert provider impls) under `internal/`
 - Write godoc comments for all public types, interfaces, and functions
-- Verify consumers can import `github.com/perdasilva/regv1render` and render a bundle
+- Verify consumers can import `github.com/perdasilva/rv1` and render a bundle
 
 ## Task Group 5: Clean up and refactor (medium)
 

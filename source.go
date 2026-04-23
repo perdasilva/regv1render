@@ -1,9 +1,9 @@
-package regv1render
+package rv1
 
 import (
 	"io/fs"
 
-	"github.com/perdasilva/regv1render/internal/bundle/source"
+	"github.com/perdasilva/rv1/internal/bundle/source"
 )
 
 // BundleSource loads a registry+v1 bundle from some backing store.

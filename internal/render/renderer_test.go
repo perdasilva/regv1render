@@ -21,10 +21,10 @@ import (
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/render"
-	. "github.com/perdasilva/regv1render/internal/util/testutil"
-	"github.com/perdasilva/regv1render/internal/util/testutil/clusterserviceversion"
+	"github.com/perdasilva/rv1/internal/bundle"
+	"github.com/perdasilva/rv1/internal/render"
+	. "github.com/perdasilva/rv1/internal/util/testutil"
+	"github.com/perdasilva/rv1/internal/util/testutil/clusterserviceversion"
 )
 
 // ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-# Contributing to regv1render
+# Contributing to rv1
 
 ## Prerequisites
 
@@ -8,8 +8,8 @@
 ## Getting Started
 
 ```bash
-git clone https://github.com/perdasilva/regv1render.git
-cd regv1render
+git clone https://github.com/perdasilva/rv1.git
+cd rv1
 make verify   # run the full quality gate (fmt + vet + lint + test)
 make build    # build the rv1 CLI binary
 ```
@@ -69,7 +69,7 @@ bingo get <tool-module-path>
 ## Project Structure
 
 ```
-*.go           Public API (consumers import github.com/perdasilva/regv1render)
+*.go           Public API (consumers import github.com/perdasilva/rv1)
 internal/      Private implementation (render engine, bundle types, utilities)
 cmd/rv1/       CLI tool
 test/          Regression tests with golden-file fixtures

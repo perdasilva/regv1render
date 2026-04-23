@@ -1,12 +1,12 @@
-package regv1render
+package rv1
 
 import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/render"
-	"github.com/perdasilva/regv1render/internal/render/certproviders"
-	"github.com/perdasilva/regv1render/internal/render/validator"
+	"github.com/perdasilva/rv1/internal/bundle"
+	"github.com/perdasilva/rv1/internal/render"
+	"github.com/perdasilva/rv1/internal/render/certproviders"
+	"github.com/perdasilva/rv1/internal/render/validator"
 )
 
 // Renderer validates and renders registry+v1 bundles to plain
@@ -50,8 +50,8 @@ type RendererBuilder struct {
 // NewRendererBuilder creates a RendererBuilder with the standard
 // registry+v1 validator and generators.
 //
-//	r := regv1render.NewRendererBuilder().
-//	    WithCertificateProvider(regv1render.CertManagerProvider{}).
+//	r := rv1.NewRendererBuilder().
+//	    WithCertificateProvider(rv1.CertManagerProvider{}).
 //	    WithProvidedAPIsClusterRoles().
 //	    Build()
 func NewRendererBuilder() *RendererBuilder {

@@ -9,8 +9,8 @@ Add the discriminated union struct and wire it into the config parser.
 - Add `CertificateProviderConfig` struct with `Type` field to `cmd/rv1/render.go`
 - Add `CertificateProvider *CertificateProviderConfig` field to `renderConfig`
 - Map `type` values in `buildRenderOptions()`:
-  - `cert-manager` → `regv1render.WithCertificateProvider(regv1render.CertManagerProvider{})`
-  - `openshift-service-ca` → `regv1render.WithCertificateProvider(regv1render.OpenShiftServiceCAProvider{})`
+  - `cert-manager` → `rv1.WithCertificateProvider(rv1.CertManagerProvider{})`
+  - `openshift-service-ca` → `rv1.WithCertificateProvider(rv1.OpenShiftServiceCAProvider{})`
   - `none` or nil → no provider (default, current behavior)
 - Validate `type` — reject unknown values with a clear error message
 

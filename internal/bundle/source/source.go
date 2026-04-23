@@ -16,7 +16,7 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/alpha/property"
 
-	"github.com/perdasilva/regv1render/internal/bundle"
+	"github.com/perdasilva/rv1/internal/bundle"
 )
 
 const (

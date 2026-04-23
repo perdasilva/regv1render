@@ -1,6 +1,6 @@
 # Documentation & Examples
 
-Provide comprehensive documentation and usage examples for the regv1render library and rv1 CLI. Add testable examples that appear in godoc, a CONTRIBUTING.md for contributors, and enhance the README with upstream relationship context.
+Provide comprehensive documentation and usage examples for the rv1 library and rv1 CLI. Add testable examples that appear in godoc, a CONTRIBUTING.md for contributors, and enhance the README with upstream relationship context.
 
 ## Task Group 1: Testable examples for godoc (medium)
 
@@ -22,7 +22,7 @@ Review and improve godoc comments across the public API.
 - Check all exported types, functions, and variables in `render.go`, `source.go`, `certproviders.go`, `doc.go`
 - Ensure doc comments are complete, accurate, and follow Go conventions (start with the name of the thing being documented)
 - Add package-level documentation to `doc.go` describing the library's purpose, relationship to upstream, and basic usage
-- Run `go doc github.com/perdasilva/regv1render` and verify the output is clean
+- Run `go doc github.com/perdasilva/rv1` and verify the output is clean
 
 ## Task Group 3: README enhancements (small)
 
@@ -49,6 +49,6 @@ Create a contributor guide covering the development workflow.
 Verify all documentation is consistent and accurate.
 
 - Run `make verify` — all tests (including examples) pass
-- Run `go doc github.com/perdasilva/regv1render` — verify clean output with examples
+- Run `go doc github.com/perdasilva/rv1` — verify clean output with examples
 - Read through README and CONTRIBUTING end-to-end for coherence
 - Update CLAUDE.md if needed

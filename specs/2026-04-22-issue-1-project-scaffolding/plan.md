@@ -6,8 +6,8 @@ Set up the foundational project structure, build system, and CI pipeline so that
 
 Initialize the Go module and create minimal source files so the project compiles.
 
-- Initialize `go.mod` with module path `github.com/perdasilva/regv1render` and Go 1.25
-- Create `doc.go` at the repo root with a `package regv1render` declaration and a package-level doc comment
+- Initialize `go.mod` with module path `github.com/perdasilva/rv1` and Go 1.25
+- Create `doc.go` at the repo root with a `package rv1` declaration and a package-level doc comment
 - Create `cmd/rv1/main.go` with a minimal `main` package that prints a placeholder message
 - Run `go mod tidy` to ensure the module is valid
 

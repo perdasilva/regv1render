@@ -17,7 +17,7 @@ lint: $(GOLANGCI_LINT)
 
 fmt: $(GOIMPORTS)
 	gofmt -w .
-	$(GOIMPORTS) -w -local github.com/perdasilva/regv1render .
+	$(GOIMPORTS) -w -local github.com/perdasilva/rv1 .
 
 vet:
 	go vet ./...

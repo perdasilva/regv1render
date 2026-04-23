@@ -3,12 +3,12 @@
 ## Language & Runtime
 
 - **Language:** Go 1.25
-- **Module path:** `github.com/perdasilva/regv1render`
+- **Module path:** `github.com/perdasilva/rv1`
 
 ## Project Structure
 
 ```
-regv1render/
+rv1/
 ├── render.go            # public API entry points
 ├── types.go             # public types and interfaces
 ├── render_test.go       # tests

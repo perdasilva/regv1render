@@ -14,7 +14,7 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	regv1bundle "github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
-	"github.com/perdasilva/regv1render/internal/bundle"
+	"github.com/perdasilva/rv1/internal/bundle"
 )
 
 // BundleValidator validates a RegistryV1 bundle by running all checks.

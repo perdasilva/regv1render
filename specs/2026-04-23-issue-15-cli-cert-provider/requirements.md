@@ -24,4 +24,4 @@
 
 ## Dependencies
 
-- `regv1render` public API: `WithCertificateProvider()`, `CertManagerProvider`, `OpenShiftServiceCAProvider`
+- `rv1` public API: `WithCertificateProvider()`, `CertManagerProvider`, `OpenShiftServiceCAProvider`
