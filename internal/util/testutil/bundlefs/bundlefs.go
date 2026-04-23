@@ -11,8 +11,8 @@ import (
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/alpha/property"
+	"github.com/operator-framework/operator-registry/pkg/registry"
 
-	"github.com/perdasilva/rv1/internal/bundle"
 	"github.com/perdasilva/rv1/internal/bundle/source"
 )
 
@@ -35,7 +35,7 @@ type BundleFSBuilder interface {
 
 // bundleFSBuilder builds a registry+v1 bundle filesystem
 type bundleFSBuilder struct {
-	annotations *bundle.Annotations
+	annotations *registry.Annotations
 	properties  []property.Property
 	resources   map[string]client.Object
 }
@@ -48,7 +48,7 @@ func Builder() BundleFSBuilder {
 // bundle filesystem metadata/annotations.yaml file
 func (b *bundleFSBuilder) WithPackageName(packageName string) BundleFSBuilder {
 	if b.annotations == nil {
-		b.annotations = &bundle.Annotations{}
+		b.annotations = &registry.Annotations{}
 	}
 	b.annotations.PackageName = packageName
 	return b
@@ -58,7 +58,7 @@ func (b *bundleFSBuilder) WithPackageName(packageName string) BundleFSBuilder {
 // bundle filesystem metadata/annotations.yaml file
 func (b *bundleFSBuilder) WithChannels(channels ...string) BundleFSBuilder {
 	if b.annotations == nil {
-		b.annotations = &bundle.Annotations{}
+		b.annotations = &registry.Annotations{}
 	}
 	b.annotations.Channels = strings.Join(channels, ",")
 	return b
@@ -68,7 +68,7 @@ func (b *bundleFSBuilder) WithChannels(channels ...string) BundleFSBuilder {
 // bundle filesystem metadata/annotations.yaml file
 func (b *bundleFSBuilder) WithDefaultChannel(channel string) BundleFSBuilder {
 	if b.annotations == nil {
-		b.annotations = &bundle.Annotations{}
+		b.annotations = &registry.Annotations{}
 	}
 	b.annotations.DefaultChannelName = channel
 	return b
@@ -111,7 +111,7 @@ func (b *bundleFSBuilder) Build() fstest.MapFS {
 
 	// Add annotations metadata
 	if b.annotations != nil {
-		annotationsYml, err := yaml.Marshal(bundle.AnnotationsFile{
+		annotationsYml, err := yaml.Marshal(registry.AnnotationsFile{
 			Annotations: *b.annotations,
 		})
 		if err != nil {
