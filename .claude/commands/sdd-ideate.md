@@ -37,14 +37,16 @@ Brainstorm and create new epics for the project roadmap. Accepts an optional sta
 
 Once the user approves the epics:
 
-1. For each new epic, create a GitHub issue:
+1. For each new epic, create a GitHub issue using the epic template. The rendered body must contain these sections so agents can parse them:
+   - `### Summary` — one or two sentences
+   - `### Deliverables` — bullet list of concrete work items
+   - `### Dependencies` — `#N` issue references (or "None")
+   - `### Scope` — small, medium, or large
+   - `### Additional context` — optional extra info
+2. Create via:
    ```
-   gh issue create --title "[epic] <name>" --label "epic,ready" --body "<body with deliverables and dependencies>"
+   gh issue create --title "[epic] <name>" --label "epic" --body "<body following the sections above>"
    ```
-2. Use the same body format as existing epic issues:
-   - `## <name>` heading
-   - Deliverable bullets
-   - `**Dependencies:** #N` section if applicable
 
 ## Step 5: Summary
 

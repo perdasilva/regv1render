@@ -9,7 +9,7 @@ Plan the next epic. Find the next eligible epic issue, create a branch, and writ
 
 1. List open epic issues that have the `ready` label: `gh issue list --label epic,ready --state open --json number,title,body --limit 50`
 2. List all epic issues (open and closed) to check for dependency references: `gh issue list --label epic --state all --json number,title,body,state --limit 50`
-3. For each open+ready issue, check if its body contains a "Dependencies:" line referencing other issues. Parse issue numbers from `#N` patterns or issue URLs.
+3. For each open+ready issue, check if its body contains a "Dependencies" section (either `**Dependencies:**` or `### Dependencies`) referencing other issues. Parse issue numbers from `#N` patterns or issue URLs.
 4. An issue is eligible if it has the `ready` label AND all its dependency issues are closed.
 5. Among eligible issues, pick the one with the lowest issue number.
 6. If no eligible issues exist, report the situation and use AskUserQuestion to ask the user what to do.
