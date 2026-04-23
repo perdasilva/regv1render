@@ -9,7 +9,10 @@ A standalone Go library for rendering OLM registry+v1 bundles to plain Kubernete
 testdata/      Test fixtures (ignored by go build)
 internal/      Non-public implementation details (not importable by consumers)
   bundle/      RegistryV1 bundle type, annotations, and source loading (fs.FS)
-  render/      Core rendering engine, utilities, validators, generators, cert providers
+  render/      Core rendering engine, generators, cert providers, resource builders
+    validator/     Bundle validation logic
+    resourceutil/  Kubernetes resource builder helpers (Deployment, Role, Service, etc.)
+    certproviders/ Certificate provider implementations (cert-manager, service-ca, secret)
   util/testutil/ Test helpers (bundlefs builder, CSV builder)
 cmd/rv1/       Showcase CLI tool for rendering bundles from the command line
 test/          Regression tests with golden-file fixtures

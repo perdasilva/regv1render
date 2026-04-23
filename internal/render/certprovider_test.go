@@ -1,4 +1,4 @@
-package render_test
+package render
 
 import (
 	"fmt"
@@ -9,13 +9,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/perdasilva/regv1render/internal/render"
-	. "github.com/perdasilva/regv1render/internal/util/testutil"
 )
 
+func toUnstructuredHelper(t *testing.T, obj client.Object) *unstructured.Unstructured {
+	t.Helper()
+	u, err := ToUnstructured(obj)
+	require.NoError(t, err)
+	return u
+}
+
 func Test_CertificateProvisioner_WithoutCertProvider(t *testing.T) {
-	provisioner := &render.CertificateProvisioner{
+	provisioner := &CertificateProvisioner{
 		ServiceName:  "webhook",
 		CertName:     "cert",
 		Namespace:    "namespace",
@@ -32,24 +36,24 @@ func Test_CertificateProvisioner_WithoutCertProvider(t *testing.T) {
 
 func Test_CertificateProvisioner_WithCertProvider(t *testing.T) {
 	fakeProvider := &FakeCertProvider{
-		InjectCABundleFn: func(obj client.Object, cfg render.CertificateProvisionerConfig) error {
+		InjectCABundleFn: func(obj client.Object, cfg CertificateProvisionerConfig) error {
 			obj.SetName("some-name")
 			return nil
 		},
-		AdditionalObjectsFn: func(cfg render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
-			return []unstructured.Unstructured{*ToUnstructuredT(t, &corev1.Secret{
+		AdditionalObjectsFn: func(cfg CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
+			return []unstructured.Unstructured{*toUnstructuredHelper(t, &corev1.Secret{
 				TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: corev1.SchemeGroupVersion.String()},
 			})}, nil
 		},
-		GetCertSecretInfoFn: func(cfg render.CertificateProvisionerConfig) render.CertSecretInfo {
-			return render.CertSecretInfo{
+		GetCertSecretInfoFn: func(cfg CertificateProvisionerConfig) CertSecretInfo {
+			return CertSecretInfo{
 				SecretName:     "some-secret",
 				PrivateKeyKey:  "some-key",
 				CertificateKey: "another-key",
 			}
 		},
 	}
-	provisioner := &render.CertificateProvisioner{
+	provisioner := &CertificateProvisioner{
 		ServiceName:  "webhook",
 		CertName:     "cert",
 		Namespace:    "namespace",
@@ -62,11 +66,11 @@ func Test_CertificateProvisioner_WithCertProvider(t *testing.T) {
 
 	objs, err := provisioner.AdditionalObjects()
 	require.NoError(t, err)
-	require.Equal(t, []unstructured.Unstructured{*ToUnstructuredT(t, &corev1.Secret{
+	require.Equal(t, []unstructured.Unstructured{*toUnstructuredHelper(t, &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{Kind: "Secret", APIVersion: corev1.SchemeGroupVersion.String()},
 	})}, objs)
 
-	require.Equal(t, &render.CertSecretInfo{
+	require.Equal(t, &CertSecretInfo{
 		SecretName:     "some-secret",
 		PrivateKeyKey:  "some-key",
 		CertificateKey: "another-key",
@@ -75,14 +79,14 @@ func Test_CertificateProvisioner_WithCertProvider(t *testing.T) {
 
 func Test_CertificateProvisioner_Errors(t *testing.T) {
 	fakeProvider := &FakeCertProvider{
-		InjectCABundleFn: func(obj client.Object, cfg render.CertificateProvisionerConfig) error {
+		InjectCABundleFn: func(obj client.Object, cfg CertificateProvisionerConfig) error {
 			return fmt.Errorf("some error")
 		},
-		AdditionalObjectsFn: func(cfg render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
+		AdditionalObjectsFn: func(cfg CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
 			return nil, fmt.Errorf("some other error")
 		},
 	}
-	provisioner := &render.CertificateProvisioner{
+	provisioner := &CertificateProvisioner{
 		ServiceName:  "webhook",
 		CertName:     "cert",
 		Namespace:    "namespace",
@@ -101,7 +105,7 @@ func Test_CertificateProvisioner_Errors(t *testing.T) {
 
 func Test_CertProvisionerFor(t *testing.T) {
 	fakeProvider := &FakeCertProvider{}
-	prov := render.CertProvisionerFor("my.deployment.thing", render.Options{
+	prov := CertProvisionerFor("my.deployment.thing", options{
 		InstallNamespace:    "my-namespace",
 		CertificateProvider: fakeProvider,
 	})
@@ -113,7 +117,7 @@ func Test_CertProvisionerFor(t *testing.T) {
 }
 
 func Test_CertProvisionerFor_ExtraLargeName_MoreThan63Chars(t *testing.T) {
-	prov := render.CertProvisionerFor("my.object.thing.has.a.really.really.really.really.really.long.name", render.Options{})
+	prov := CertProvisionerFor("my.object.thing.has.a.really.really.really.really.really.long.name", options{})
 
 	require.Len(t, prov.ServiceName, 63)
 	require.Len(t, prov.CertName, 63)

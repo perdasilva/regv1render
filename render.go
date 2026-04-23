@@ -6,7 +6,7 @@ import (
 	"github.com/perdasilva/regv1render/internal/bundle"
 	"github.com/perdasilva/regv1render/internal/render"
 	"github.com/perdasilva/regv1render/internal/render/certproviders"
-	"github.com/perdasilva/regv1render/internal/render/registryv1"
+	"github.com/perdasilva/regv1render/internal/render/validator"
 )
 
 // Renderer validates and renders registry+v1 bundles to plain
@@ -25,7 +25,7 @@ type CertificateProvider = render.CertificateProvider
 type DeploymentConfig = render.DeploymentConfig
 
 // ValidationError represents a validation failure from a specific check.
-type ValidationError = render.ValidationError
+type ValidationError = validator.ValidationError
 
 // RegistryV1 holds the parsed contents of a registry+v1 bundle.
 type RegistryV1 = bundle.RegistryV1
@@ -55,7 +55,7 @@ type RendererBuilder struct {
 //	    WithProvidedAPIsClusterRoles().
 //	    Build()
 func NewRendererBuilder() *RendererBuilder {
-	return &RendererBuilder{inner: registryv1.NewRendererBuilder()}
+	return &RendererBuilder{inner: render.NewRendererBuilder()}
 }
 
 // WithCertificateProvider sets the certificate provider for webhook TLS.

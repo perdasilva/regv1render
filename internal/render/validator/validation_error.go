@@ -1,4 +1,4 @@
-package render
+package validator
 
 import "fmt"
 

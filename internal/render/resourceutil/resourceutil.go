@@ -1,4 +1,4 @@
-package generators
+package resourceutil
 
 import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -24,7 +24,6 @@ func (r ResourceCreatorOptions) ApplyTo(obj client.Object) client.Object {
 	return obj
 }
 
-// WithSubjects applies rbac subjects to ClusterRoleBinding and RoleBinding resources
 func WithSubjects(subjects ...rbacv1.Subject) func(client.Object) {
 	return func(obj client.Object) {
 		switch o := obj.(type) {
@@ -38,7 +37,6 @@ func WithSubjects(subjects ...rbacv1.Subject) func(client.Object) {
 	}
 }
 
-// WithRoleRef applies rbac RoleRef to ClusterRoleBinding and RoleBinding resources
 func WithRoleRef(roleRef rbacv1.RoleRef) func(client.Object) {
 	return func(obj client.Object) {
 		switch o := obj.(type) {
@@ -52,7 +50,6 @@ func WithRoleRef(roleRef rbacv1.RoleRef) func(client.Object) {
 	}
 }
 
-// WithRules applies rbac PolicyRules to Role and ClusterRole resources
 func WithRules(rules ...rbacv1.PolicyRule) func(client.Object) {
 	return func(obj client.Object) {
 		switch o := obj.(type) {
@@ -66,7 +63,6 @@ func WithRules(rules ...rbacv1.PolicyRule) func(client.Object) {
 	}
 }
 
-// WithDeploymentSpec applies a DeploymentSpec to Deployment resources
 func WithDeploymentSpec(depSpec appsv1.DeploymentSpec) func(client.Object) {
 	return func(obj client.Object) {
 		switch o := obj.(type) {
@@ -78,14 +74,12 @@ func WithDeploymentSpec(depSpec appsv1.DeploymentSpec) func(client.Object) {
 	}
 }
 
-// WithLabels applies labels to the metadata of any resource
 func WithLabels(labels map[string]string) func(client.Object) {
 	return func(obj client.Object) {
 		obj.SetLabels(labels)
 	}
 }
 
-// WithServiceSpec applies a service spec to a Service resource
 func WithServiceSpec(serviceSpec corev1.ServiceSpec) func(client.Object) {
 	return func(obj client.Object) {
 		switch o := obj.(type) {
@@ -95,7 +89,6 @@ func WithServiceSpec(serviceSpec corev1.ServiceSpec) func(client.Object) {
 	}
 }
 
-// WithValidatingWebhooks applies validating webhooks to a ValidatingWebhookConfiguration resource
 func WithValidatingWebhooks(webhooks ...admissionregistrationv1.ValidatingWebhook) func(client.Object) {
 	return func(obj client.Object) {
 		switch o := obj.(type) {
@@ -105,7 +98,6 @@ func WithValidatingWebhooks(webhooks ...admissionregistrationv1.ValidatingWebhoo
 	}
 }
 
-// WithMutatingWebhooks applies mutating webhooks to a MutatingWebhookConfiguration resource
 func WithMutatingWebhooks(webhooks ...admissionregistrationv1.MutatingWebhook) func(client.Object) {
 	return func(obj client.Object) {
 		switch o := obj.(type) {
@@ -115,8 +107,6 @@ func WithMutatingWebhooks(webhooks ...admissionregistrationv1.MutatingWebhook) f
 	}
 }
 
-// CreateServiceAccountResource creates a ServiceAccount resource with name 'name', namespace 'namespace', and applying
-// any ServiceAccount related options in opts
 func CreateServiceAccountResource(name string, namespace string, opts ...ResourceCreatorOption) *corev1.ServiceAccount {
 	return ResourceCreatorOptions(opts).ApplyTo(
 		&corev1.ServiceAccount{
@@ -132,8 +122,6 @@ func CreateServiceAccountResource(name string, namespace string, opts ...Resourc
 	).(*corev1.ServiceAccount)
 }
 
-// CreateRoleResource creates a Role resource with name 'name' and namespace 'namespace' and applying any
-// Role related options in opts
 func CreateRoleResource(name string, namespace string, opts ...ResourceCreatorOption) *rbacv1.Role {
 	return ResourceCreatorOptions(opts).ApplyTo(
 		&rbacv1.Role{
@@ -149,8 +137,6 @@ func CreateRoleResource(name string, namespace string, opts ...ResourceCreatorOp
 	).(*rbacv1.Role)
 }
 
-// CreateClusterRoleResource creates a ClusterRole resource with name 'name' and applying any
-// ClusterRole related options in opts
 func CreateClusterRoleResource(name string, opts ...ResourceCreatorOption) *rbacv1.ClusterRole {
 	return ResourceCreatorOptions(opts).ApplyTo(
 		&rbacv1.ClusterRole{
@@ -165,8 +151,6 @@ func CreateClusterRoleResource(name string, opts ...ResourceCreatorOption) *rbac
 	).(*rbacv1.ClusterRole)
 }
 
-// CreateClusterRoleBindingResource creates a ClusterRoleBinding resource with name 'name' and applying any
-// ClusterRoleBinding related options in opts
 func CreateClusterRoleBindingResource(name string, opts ...ResourceCreatorOption) *rbacv1.ClusterRoleBinding {
 	return ResourceCreatorOptions(opts).ApplyTo(
 		&rbacv1.ClusterRoleBinding{
@@ -181,8 +165,6 @@ func CreateClusterRoleBindingResource(name string, opts ...ResourceCreatorOption
 	).(*rbacv1.ClusterRoleBinding)
 }
 
-// CreateRoleBindingResource creates a RoleBinding resource with name 'name', namespace 'namespace', and applying any
-// RoleBinding related options in opts
 func CreateRoleBindingResource(name string, namespace string, opts ...ResourceCreatorOption) *rbacv1.RoleBinding {
 	return ResourceCreatorOptions(opts).ApplyTo(
 		&rbacv1.RoleBinding{
@@ -198,8 +180,6 @@ func CreateRoleBindingResource(name string, namespace string, opts ...ResourceCr
 	).(*rbacv1.RoleBinding)
 }
 
-// CreateDeploymentResource creates a Deployment resource with name 'name', namespace 'namespace', and applying any
-// Deployment related options in opts
 func CreateDeploymentResource(name string, namespace string, opts ...ResourceCreatorOption) *appsv1.Deployment {
 	return ResourceCreatorOptions(opts).ApplyTo(
 		&appsv1.Deployment{
@@ -215,8 +195,6 @@ func CreateDeploymentResource(name string, namespace string, opts ...ResourceCre
 	).(*appsv1.Deployment)
 }
 
-// CreateValidatingWebhookConfigurationResource creates a ValidatingWebhookConfiguration resource with name 'name',
-// namespace 'namespace', and applying any ValidatingWebhookConfiguration related options in opts
 func CreateValidatingWebhookConfigurationResource(name string, namespace string, opts ...ResourceCreatorOption) *admissionregistrationv1.ValidatingWebhookConfiguration {
 	return ResourceCreatorOptions(opts).ApplyTo(
 		&admissionregistrationv1.ValidatingWebhookConfiguration{
@@ -232,8 +210,6 @@ func CreateValidatingWebhookConfigurationResource(name string, namespace string,
 	).(*admissionregistrationv1.ValidatingWebhookConfiguration)
 }
 
-// CreateMutatingWebhookConfigurationResource creates a MutatingWebhookConfiguration resource with name 'name',
-// namespace 'namespace', and applying any MutatingWebhookConfiguration related options in opts
 func CreateMutatingWebhookConfigurationResource(name string, namespace string, opts ...ResourceCreatorOption) *admissionregistrationv1.MutatingWebhookConfiguration {
 	return ResourceCreatorOptions(opts).ApplyTo(
 		&admissionregistrationv1.MutatingWebhookConfiguration{
@@ -249,7 +225,6 @@ func CreateMutatingWebhookConfigurationResource(name string, namespace string, o
 	).(*admissionregistrationv1.MutatingWebhookConfiguration)
 }
 
-// CreateServiceResource creates a Service resource with name 'name', namespace 'namespace', and applying any Service related options in opts
 func CreateServiceResource(name string, namespace string, opts ...ResourceCreatorOption) *corev1.Service {
 	return ResourceCreatorOptions(opts).ApplyTo(&corev1.Service{
 		TypeMeta: metav1.TypeMeta{

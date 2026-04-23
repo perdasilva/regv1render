@@ -58,7 +58,7 @@ func (c CertificateProvisioner) GetCertSecretInfo() *CertSecretInfo {
 	return &info
 }
 
-func CertProvisionerFor(deploymentName string, opts Options) CertificateProvisioner {
+func CertProvisionerFor(deploymentName string, opts options) CertificateProvisioner {
 	// maintaining parity with OLMv0 naming
 	// See https://github.com/operator-framework/operator-lifecycle-manager/blob/658a6a60de8315f055f54aa7e50771ee4daa8983/pkg/controller/install/webhook.go#L254
 	webhookServiceName := ObjectNameForBaseAndSuffix(strings.ReplaceAll(deploymentName, ".", "-"), "service")

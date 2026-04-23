@@ -15,7 +15,6 @@ import (
 	regv1bundle "github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
 	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/render"
 )
 
 // BundleValidator validates a RegistryV1 bundle by running all checks.
@@ -48,7 +47,7 @@ func (v BundleValidator) Validate(rv1 *bundle.RegistryV1) error {
 	var errs []error
 	for _, check := range checks {
 		for _, err := range check.fn(rv1) {
-			errs = append(errs, &render.ValidationError{Check: check.name, Err: err})
+			errs = append(errs, &ValidationError{Check: check.name, Err: err})
 		}
 	}
 	return errors.Join(errs...)
