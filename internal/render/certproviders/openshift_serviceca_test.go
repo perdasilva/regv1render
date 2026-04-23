@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/rv1/internal/render"
 	"github.com/perdasilva/rv1/internal/render/certproviders"
 )
 
@@ -18,13 +17,13 @@ func Test_OpenshiftServiceCAProvider_InjectCABundle(t *testing.T) {
 	for _, tc := range []struct {
 		name        string
 		obj         client.Object
-		cfg         render.CertificateProvisionerConfig
+		cfg         certproviders.CertificateProvisionerConfig
 		expectedObj client.Object
 	}{
 		{
 			name: "injects inject-cabundle annotation in validating webhook configuration",
 			obj:  &admissionregistrationv1.ValidatingWebhookConfiguration{},
-			cfg: render.CertificateProvisionerConfig{
+			cfg: certproviders.CertificateProvisionerConfig{
 				ServiceName: "webhook-service",
 				Namespace:   "namespace",
 				CertName:    "cert-name",
@@ -40,7 +39,7 @@ func Test_OpenshiftServiceCAProvider_InjectCABundle(t *testing.T) {
 		{
 			name: "injects inject-cabundle annotation in mutating webhook configuration",
 			obj:  &admissionregistrationv1.MutatingWebhookConfiguration{},
-			cfg: render.CertificateProvisionerConfig{
+			cfg: certproviders.CertificateProvisionerConfig{
 				ServiceName: "webhook-service",
 				Namespace:   "namespace",
 				CertName:    "cert-name",
@@ -56,7 +55,7 @@ func Test_OpenshiftServiceCAProvider_InjectCABundle(t *testing.T) {
 		{
 			name: "injects inject-cabundle annotation in custom resource definition",
 			obj:  &apiextensionsv1.CustomResourceDefinition{},
-			cfg: render.CertificateProvisionerConfig{
+			cfg: certproviders.CertificateProvisionerConfig{
 				ServiceName: "webhook-service",
 				Namespace:   "namespace",
 				CertName:    "cert-name",
@@ -72,7 +71,7 @@ func Test_OpenshiftServiceCAProvider_InjectCABundle(t *testing.T) {
 		{
 			name: "injects serving-cert-secret-name annotation in service resource referencing the certificate name",
 			obj:  &corev1.Service{},
-			cfg: render.CertificateProvisionerConfig{
+			cfg: certproviders.CertificateProvisionerConfig{
 				ServiceName: "webhook-service",
 				Namespace:   "namespace",
 				CertName:    "cert-name",
@@ -88,7 +87,7 @@ func Test_OpenshiftServiceCAProvider_InjectCABundle(t *testing.T) {
 		{
 			name: "ignores other objects",
 			obj:  &corev1.Secret{},
-			cfg: render.CertificateProvisionerConfig{
+			cfg: certproviders.CertificateProvisionerConfig{
 				ServiceName: "webhook-service",
 				Namespace:   "namespace",
 				CertName:    "cert-name",
@@ -106,7 +105,7 @@ func Test_OpenshiftServiceCAProvider_InjectCABundle(t *testing.T) {
 
 func Test_OpenshiftServiceCAProvider_AdditionalObjects(t *testing.T) {
 	certProvider := certproviders.OpenshiftServiceCaCertificateProvider{}
-	objs, err := certProvider.AdditionalObjects(render.CertificateProvisionerConfig{
+	objs, err := certProvider.AdditionalObjects(certproviders.CertificateProvisionerConfig{
 		ServiceName: "webhook-service",
 		Namespace:   "namespace",
 		CertName:    "cert-name",
@@ -117,12 +116,12 @@ func Test_OpenshiftServiceCAProvider_AdditionalObjects(t *testing.T) {
 
 func Test_OpenshiftServiceCAProvider_GetCertSecretInfo(t *testing.T) {
 	certProvider := certproviders.OpenshiftServiceCaCertificateProvider{}
-	certInfo := certProvider.GetCertSecretInfo(render.CertificateProvisionerConfig{
+	certInfo := certProvider.GetCertSecretInfo(certproviders.CertificateProvisionerConfig{
 		ServiceName: "webhook-service",
 		Namespace:   "namespace",
 		CertName:    "cert-name",
 	})
-	require.Equal(t, render.CertSecretInfo{
+	require.Equal(t, certproviders.CertSecretInfo{
 		SecretName:     "cert-name",
 		PrivateKeyKey:  "tls.key",
 		CertificateKey: "tls.crt",

@@ -8,19 +8,18 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/perdasilva/rv1/internal/render"
 	"github.com/perdasilva/rv1/internal/render/certproviders"
 )
 
 func TestSecretCertProvider_InjectCABundle(t *testing.T) {
 	p := certproviders.SecretCertProvider{}
-	err := p.InjectCABundle(nil, render.CertificateProvisionerConfig{})
+	err := p.InjectCABundle(nil, certproviders.CertificateProvisionerConfig{})
 	require.NoError(t, err)
 }
 
 func TestSecretCertProvider_AdditionalObjects_EmptyData(t *testing.T) {
 	p := certproviders.SecretCertProvider{}
-	cfg := render.CertificateProvisionerConfig{
+	cfg := certproviders.CertificateProvisionerConfig{
 		CertName:  "test-cert",
 		Namespace: "test-ns",
 	}
@@ -50,7 +49,7 @@ func TestSecretCertProvider_AdditionalObjects_WithData(t *testing.T) {
 		Cert: cert,
 		Key:  key,
 	}
-	cfg := render.CertificateProvisionerConfig{
+	cfg := certproviders.CertificateProvisionerConfig{
 		CertName:  "my-cert",
 		Namespace: "my-ns",
 	}
@@ -66,7 +65,7 @@ func TestSecretCertProvider_AdditionalObjects_WithData(t *testing.T) {
 
 func TestSecretCertProvider_GetCertSecretInfo(t *testing.T) {
 	p := certproviders.SecretCertProvider{}
-	cfg := render.CertificateProvisionerConfig{
+	cfg := certproviders.CertificateProvisionerConfig{
 		CertName: "test-cert",
 	}
 

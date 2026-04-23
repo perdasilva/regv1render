@@ -13,8 +13,8 @@ import (
 
 	"github.com/perdasilva/rv1/internal/bundle"
 	"github.com/perdasilva/rv1/internal/bundle/source"
-	"github.com/perdasilva/rv1/internal/util/testutil/bundlefs"
-	"github.com/perdasilva/rv1/internal/util/testutil/clusterserviceversion"
+	"github.com/perdasilva/rv1/internal/testutil/bundlefs"
+	"github.com/perdasilva/rv1/internal/testutil/clusterserviceversion"
 )
 
 const (

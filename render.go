@@ -16,7 +16,7 @@ type RenderOption = render.RenderOption
 
 // CertificateProvider is an interface for injecting TLS certificate
 // management into rendered webhook and API service resources.
-type CertificateProvider = render.CertificateProvider
+type CertificateProvider = certproviders.CertificateProvider
 
 // DeploymentConfig allows customizing the deployment resources
 // generated during rendering.

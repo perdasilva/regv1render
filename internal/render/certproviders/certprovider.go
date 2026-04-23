@@ -1,22 +1,19 @@
-package render
+package certproviders
 
 import (
-	"strings"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// CertificateProvider encapsulate the creation and modification of object for certificate provisioning
-// in Kubernetes by vendors such as CertManager or the OpenshiftServiceCA operator
+// CertificateProvider encapsulates the creation and modification of objects for certificate provisioning
+// in Kubernetes by vendors such as CertManager or the OpenshiftServiceCA operator.
 type CertificateProvider interface {
 	InjectCABundle(obj client.Object, cfg CertificateProvisionerConfig) error
 	AdditionalObjects(cfg CertificateProvisionerConfig) ([]unstructured.Unstructured, error)
 	GetCertSecretInfo(cfg CertificateProvisionerConfig) CertSecretInfo
 }
 
-// CertSecretInfo contains describes the certificate secret resource information such as name and
-// certificate and private key keys
+// CertSecretInfo describes the certificate secret resource information.
 type CertSecretInfo struct {
 	SecretName     string
 	CertificateKey string
@@ -24,7 +21,7 @@ type CertSecretInfo struct {
 }
 
 // CertificateProvisionerConfig contains the necessary information for a CertificateProvider
-// to correctly generate and modify object for certificate injection and automation
+// to correctly generate and modify objects for certificate injection and automation.
 type CertificateProvisionerConfig struct {
 	ServiceName  string
 	CertName     string
@@ -33,7 +30,7 @@ type CertificateProvisionerConfig struct {
 }
 
 // CertificateProvisioner uses a CertificateProvider to modify and generate objects based on its
-// CertificateProvisionerConfig
+// CertificateProvisionerConfig.
 type CertificateProvisioner CertificateProvisionerConfig
 
 func (c CertificateProvisioner) InjectCABundle(obj client.Object) error {
@@ -56,21 +53,4 @@ func (c CertificateProvisioner) GetCertSecretInfo() *CertSecretInfo {
 	}
 	info := c.CertProvider.GetCertSecretInfo(CertificateProvisionerConfig(c))
 	return &info
-}
-
-func CertProvisionerFor(deploymentName string, opts options) CertificateProvisioner {
-	// maintaining parity with OLMv0 naming
-	// See https://github.com/operator-framework/operator-lifecycle-manager/blob/658a6a60de8315f055f54aa7e50771ee4daa8983/pkg/controller/install/webhook.go#L254
-	webhookServiceName := ObjectNameForBaseAndSuffix(strings.ReplaceAll(deploymentName, ".", "-"), "service")
-
-	// maintaining parity with cert secret name in OLMv0
-	// See https://github.com/operator-framework/operator-lifecycle-manager/blob/658a6a60de8315f055f54aa7e50771ee4daa8983/pkg/controller/install/certresources.go#L151
-	certName := ObjectNameForBaseAndSuffix(webhookServiceName, "cert")
-
-	return CertificateProvisioner{
-		CertProvider: opts.CertificateProvider,
-		ServiceName:  webhookServiceName,
-		Namespace:    opts.InstallNamespace,
-		CertName:     certName,
-	}
 }

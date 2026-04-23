@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -23,8 +24,9 @@ import (
 
 	"github.com/perdasilva/rv1/internal/bundle"
 	"github.com/perdasilva/rv1/internal/render"
-	. "github.com/perdasilva/rv1/internal/util/testutil"
-	"github.com/perdasilva/rv1/internal/util/testutil/clusterserviceversion"
+	"github.com/perdasilva/rv1/internal/render/certproviders"
+	. "github.com/perdasilva/rv1/internal/testutil"
+	"github.com/perdasilva/rv1/internal/testutil/clusterserviceversion"
 )
 
 // ---------------------------------------------------------------------------
@@ -70,8 +72,8 @@ func buildRenderer(opts ...func(*render.RendererBuilder)) *render.Renderer {
 	return b.Build()
 }
 
-// withCertProvider configures a FakeCertProvider on the builder.
-func withCertProvider(cp render.CertificateProvider) func(*render.RendererBuilder) {
+// withCertProvider configures a CertificateProvider on the builder.
+func withCertProvider(cp certproviders.CertificateProvider) func(*render.RendererBuilder) {
 	return func(b *render.RendererBuilder) {
 		b.WithCertificateProvider(cp)
 	}
@@ -156,23 +158,19 @@ func Test_Generators_Deployment_GeneratesDeploymentResources(t *testing.T) {
 }
 
 func Test_Generators_Deployment_WithCertProvider(t *testing.T) {
-	fakeProvider := render.FakeCertProvider{
-		GetCertSecretInfoFn: func(cfg render.CertificateProvisionerConfig) render.CertSecretInfo {
-			return render.CertSecretInfo{
-				SecretName:     "some-secret",
-				CertificateKey: "some-cert-key",
-				PrivateKeyKey:  "some-private-key-key",
-			}
-		},
-		InjectCABundleFn: func(_ client.Object, _ render.CertificateProvisionerConfig) error {
-			return nil
-		},
-		AdditionalObjectsFn: func(_ render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
-			return nil, nil
-		},
-	}
+	mockProvider := certproviders.NewMockCertificateProvider(t)
+	mockProvider.EXPECT().GetCertSecretInfo(mock.Anything).
+		Return(certproviders.CertSecretInfo{
+			SecretName:     "some-secret",
+			CertificateKey: "some-cert-key",
+			PrivateKeyKey:  "some-private-key-key",
+		}).Maybe()
+	mockProvider.EXPECT().InjectCABundle(mock.Anything, mock.Anything).
+		Return(nil).Maybe()
+	mockProvider.EXPECT().AdditionalObjects(mock.Anything).
+		Return(nil, nil).Maybe()
 
-	renderer := buildRenderer(withCertProvider(fakeProvider))
+	renderer := buildRenderer(withCertProvider(mockProvider))
 
 	rv1 := bundle.RegistryV1{
 		PackageName: "test-package",
@@ -879,22 +877,20 @@ func Test_Generators_CRD_PreserveUnknownFieldsFails(t *testing.T) {
 }
 
 func Test_Generators_CRD_WithCertProvider(t *testing.T) {
-	fakeProvider := render.FakeCertProvider{
-		InjectCABundleFn: func(obj client.Object, _ render.CertificateProvisionerConfig) error {
+	mockProvider := certproviders.NewMockCertificateProvider(t)
+	mockProvider.EXPECT().InjectCABundle(mock.Anything, mock.Anything).
+		RunAndReturn(func(obj client.Object, cfg certproviders.CertificateProvisionerConfig) error {
 			obj.SetAnnotations(map[string]string{
 				"cert-provider": "annotation",
 			})
 			return nil
-		},
-		AdditionalObjectsFn: func(_ render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
-			return nil, nil
-		},
-		GetCertSecretInfoFn: func(_ render.CertificateProvisionerConfig) render.CertSecretInfo {
-			return render.CertSecretInfo{}
-		},
-	}
+		}).Maybe()
+	mockProvider.EXPECT().AdditionalObjects(mock.Anything).
+		Return(nil, nil).Maybe()
+	mockProvider.EXPECT().GetCertSecretInfo(mock.Anything).
+		Return(certproviders.CertSecretInfo{}).Maybe()
 
-	renderer := buildRenderer(withCertProvider(fakeProvider))
+	renderer := buildRenderer(withCertProvider(mockProvider))
 
 	rv1 := bundle.RegistryV1{
 		PackageName: "test-package",
@@ -1147,19 +1143,17 @@ func Test_Generators_ValidatingWebhook_TrimsTrailingDash(t *testing.T) {
 }
 
 func Test_Generators_ValidatingWebhook_WithCertProvider(t *testing.T) {
-	fakeProvider := render.FakeCertProvider{
-		InjectCABundleFn: func(obj client.Object, _ render.CertificateProvisionerConfig) error {
+	mockProvider := certproviders.NewMockCertificateProvider(t)
+	mockProvider.EXPECT().InjectCABundle(mock.Anything, mock.Anything).
+		RunAndReturn(func(obj client.Object, cfg certproviders.CertificateProvisionerConfig) error {
 			obj.SetAnnotations(map[string]string{"cert-provider": "annotation"})
 			return nil
-		},
-		AdditionalObjectsFn: func(_ render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
-			return nil, nil
-		},
-		GetCertSecretInfoFn: func(_ render.CertificateProvisionerConfig) render.CertSecretInfo {
-			return render.CertSecretInfo{}
-		},
-	}
-	renderer := buildRenderer(withCertProvider(fakeProvider))
+		}).Maybe()
+	mockProvider.EXPECT().AdditionalObjects(mock.Anything).
+		Return(nil, nil).Maybe()
+	mockProvider.EXPECT().GetCertSecretInfo(mock.Anything).
+		Return(certproviders.CertSecretInfo{}).Maybe()
+	renderer := buildRenderer(withCertProvider(mockProvider))
 
 	rv1 := bundle.RegistryV1{
 		PackageName: "test-package",
@@ -1328,19 +1322,17 @@ func Test_Generators_MutatingWebhook_TrimsTrailingDash(t *testing.T) {
 }
 
 func Test_Generators_MutatingWebhook_WithCertProvider(t *testing.T) {
-	fakeProvider := render.FakeCertProvider{
-		InjectCABundleFn: func(obj client.Object, _ render.CertificateProvisionerConfig) error {
+	mockProvider := certproviders.NewMockCertificateProvider(t)
+	mockProvider.EXPECT().InjectCABundle(mock.Anything, mock.Anything).
+		RunAndReturn(func(obj client.Object, cfg certproviders.CertificateProvisionerConfig) error {
 			obj.SetAnnotations(map[string]string{"cert-provider": "annotation"})
 			return nil
-		},
-		AdditionalObjectsFn: func(_ render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
-			return nil, nil
-		},
-		GetCertSecretInfoFn: func(_ render.CertificateProvisionerConfig) render.CertSecretInfo {
-			return render.CertSecretInfo{}
-		},
-	}
-	renderer := buildRenderer(withCertProvider(fakeProvider))
+		}).Maybe()
+	mockProvider.EXPECT().AdditionalObjects(mock.Anything).
+		Return(nil, nil).Maybe()
+	mockProvider.EXPECT().GetCertSecretInfo(mock.Anything).
+		Return(certproviders.CertSecretInfo{}).Maybe()
+	renderer := buildRenderer(withCertProvider(mockProvider))
 
 	rv1 := bundle.RegistryV1{
 		PackageName: "test-package",
@@ -1618,20 +1610,18 @@ func Test_Generators_DeploymentService_AggregatesMultipleWebhooks(t *testing.T) 
 }
 
 func Test_Generators_DeploymentService_WithCertProvider(t *testing.T) {
-	fakeProvider := render.FakeCertProvider{
-		InjectCABundleFn: func(obj client.Object, _ render.CertificateProvisionerConfig) error {
+	mockProvider := certproviders.NewMockCertificateProvider(t)
+	mockProvider.EXPECT().InjectCABundle(mock.Anything, mock.Anything).
+		RunAndReturn(func(obj client.Object, cfg certproviders.CertificateProvisionerConfig) error {
 			obj.SetAnnotations(map[string]string{"cert-provider": "annotation"})
 			return nil
-		},
-		AdditionalObjectsFn: func(_ render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
-			return nil, nil
-		},
-		GetCertSecretInfoFn: func(_ render.CertificateProvisionerConfig) render.CertSecretInfo {
-			return render.CertSecretInfo{}
-		},
-	}
+		}).Maybe()
+	mockProvider.EXPECT().AdditionalObjects(mock.Anything).
+		Return(nil, nil).Maybe()
+	mockProvider.EXPECT().GetCertSecretInfo(mock.Anything).
+		Return(certproviders.CertSecretInfo{}).Maybe()
 
-	renderer := buildRenderer(withCertProvider(fakeProvider))
+	renderer := buildRenderer(withCertProvider(mockProvider))
 
 	rv1 := bundle.RegistryV1{
 		PackageName: "test-package",
@@ -1678,22 +1668,20 @@ func Test_Generators_DeploymentService_EmptyBundle(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func Test_Generators_CertProviderResource_GeneratesCertResources(t *testing.T) {
-	fakeProvider := render.FakeCertProvider{
-		AdditionalObjectsFn: func(cfg render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
+	mockProvider := certproviders.NewMockCertificateProvider(t)
+	mockProvider.EXPECT().AdditionalObjects(mock.Anything).
+		RunAndReturn(func(cfg certproviders.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
 			return []unstructured.Unstructured{*ToUnstructuredT(t, &corev1.Secret{
 				TypeMeta:   metav1.TypeMeta{Kind: "Secret", APIVersion: corev1.SchemeGroupVersion.String()},
 				ObjectMeta: metav1.ObjectMeta{Name: cfg.CertName},
 			})}, nil
-		},
-		InjectCABundleFn: func(_ client.Object, _ render.CertificateProvisionerConfig) error {
-			return nil
-		},
-		GetCertSecretInfoFn: func(_ render.CertificateProvisionerConfig) render.CertSecretInfo {
-			return render.CertSecretInfo{}
-		},
-	}
+		}).Maybe()
+	mockProvider.EXPECT().InjectCABundle(mock.Anything, mock.Anything).
+		Return(nil).Maybe()
+	mockProvider.EXPECT().GetCertSecretInfo(mock.Anything).
+		Return(certproviders.CertSecretInfo{}).Maybe()
 
-	renderer := buildRenderer(withCertProvider(fakeProvider))
+	renderer := buildRenderer(withCertProvider(mockProvider))
 
 	rv1 := bundle.RegistryV1{
 		PackageName: "test-package",
@@ -3028,7 +3016,11 @@ func Test_Renderer_DeploymentConfig_NilWhenNotProvided(t *testing.T) {
 }
 
 func Test_Renderer_WithCertificateProvider(t *testing.T) {
-	renderer := render.NewRendererBuilder().WithCertificateProvider(rendererTestCertProvider{}).Build()
+	mockProvider := certproviders.NewMockCertificateProvider(t)
+	mockProvider.EXPECT().InjectCABundle(mock.Anything, mock.Anything).Return(nil).Maybe()
+	mockProvider.EXPECT().AdditionalObjects(mock.Anything).Return(nil, nil).Maybe()
+	mockProvider.EXPECT().GetCertSecretInfo(mock.Anything).Return(certproviders.CertSecretInfo{}).Maybe()
+	renderer := render.NewRendererBuilder().WithCertificateProvider(mockProvider).Build()
 
 	_, err := renderer.Render(
 		bundle.RegistryV1{
@@ -3070,18 +3062,6 @@ func Test_Renderer_DeploymentConfig_NilWhenExplicitlyNil(t *testing.T) {
 			CSV:         clusterserviceversion.Builder().WithInstallModeSupportFor(v1alpha1.InstallModeTypeAllNamespaces).Build(),
 		}, "test-namespace")
 	require.NoError(t, err)
-}
-
-type rendererTestCertProvider struct{}
-
-func (f rendererTestCertProvider) InjectCABundle(_ client.Object, _ render.CertificateProvisionerConfig) error {
-	return nil
-}
-func (f rendererTestCertProvider) AdditionalObjects(_ render.CertificateProvisionerConfig) ([]unstructured.Unstructured, error) {
-	return nil, nil
-}
-func (f rendererTestCertProvider) GetCertSecretInfo(_ render.CertificateProvisionerConfig) render.CertSecretInfo {
-	return render.CertSecretInfo{}
 }
 
 func Test_Renderer_Success(t *testing.T) {

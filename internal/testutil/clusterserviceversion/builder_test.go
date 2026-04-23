@@ -9,7 +9,7 @@ import (
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	"github.com/perdasilva/rv1/internal/util/testutil/clusterserviceversion"
+	"github.com/perdasilva/rv1/internal/testutil/clusterserviceversion"
 )
 
 func Test_Builder(t *testing.T) {

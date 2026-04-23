@@ -3,6 +3,7 @@ package render
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -11,7 +12,9 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/perdasilva/rv1/internal/bundle"
+	"github.com/perdasilva/rv1/internal/render/certproviders"
 	"github.com/perdasilva/rv1/internal/render/validator"
+	"github.com/perdasilva/rv1/internal/renderutil"
 )
 
 // DeploymentConfig is a type alias for v1alpha1.SubscriptionConfig
@@ -34,21 +37,21 @@ type options struct {
 	InstallNamespace         string
 	TargetNamespaces         []string
 	UniqueNameGenerator      UniqueNameGenerator
-	CertificateProvider      CertificateProvider
+	CertificateProvider      certproviders.CertificateProvider
 	DeploymentConfig         *DeploymentConfig
 	ProvidedAPIsClusterRoles bool
 }
 
 func DefaultUniqueNameGenerator(base string, o interface{}) string {
-	hashStr := DeepHashObject(o)
-	return ObjectNameForBaseAndSuffix(base, hashStr)
+	hashStr := renderutil.DeepHashObject(o)
+	return renderutil.ObjectNameForBaseAndSuffix(base, hashStr)
 }
 
 // Renderer validates and renders registry+v1 bundles to plain Kubernetes manifests.
 type Renderer struct {
 	validator           bundleValidator
 	generators          []resourceGenerator
-	certProvider        CertificateProvider
+	certProvider        certproviders.CertificateProvider
 	uniqueNameGenerator UniqueNameGenerator
 	deploymentConfig    *DeploymentConfig
 }
@@ -79,7 +82,7 @@ func NewRendererBuilder() *RendererBuilder {
 }
 
 // WithCertificateProvider sets the certificate provider for webhook TLS.
-func (b *RendererBuilder) WithCertificateProvider(provider CertificateProvider) *RendererBuilder {
+func (b *RendererBuilder) WithCertificateProvider(provider certproviders.CertificateProvider) *RendererBuilder {
 	b.renderer.certProvider = provider
 	return b
 }
@@ -220,4 +223,16 @@ func supportedBundleInstallModes(rv1 *bundle.RegistryV1) sets.Set[v1alpha1.Insta
 		}
 	}
 	return supportedInstallModes
+}
+
+func certProvisionerFor(deploymentName string, opts options) certproviders.CertificateProvisioner {
+	webhookServiceName := renderutil.ObjectNameForBaseAndSuffix(strings.ReplaceAll(deploymentName, ".", "-"), "service")
+	certName := renderutil.ObjectNameForBaseAndSuffix(webhookServiceName, "cert")
+
+	return certproviders.CertificateProvisioner{
+		CertProvider: opts.CertificateProvider,
+		ServiceName:  webhookServiceName,
+		Namespace:    opts.InstallNamespace,
+		CertName:     certName,
+	}
 }
