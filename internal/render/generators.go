@@ -1,4 +1,4 @@
-package generators
+package render
 
 import (
 	"cmp"
@@ -23,7 +23,7 @@ import (
 	registrybundle "github.com/operator-framework/operator-registry/pkg/lib/bundle"
 
 	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/render"
+	"github.com/perdasilva/regv1render/internal/render/resourceutil"
 )
 
 const (
@@ -37,9 +37,6 @@ type certVolumeConfig struct {
 	TLSKeyPath  string
 }
 
-// certVolumeConfigs contain the expected configurations for certificate volume/mounts
-// that the generated Deployment resources for bundle containing webhooks and/or apiservices
-// should contain.
 var certVolumeConfigs = []certVolumeConfig{
 	{
 		Name:        "webhook-cert",
@@ -54,17 +51,11 @@ var certVolumeConfigs = []certVolumeConfig{
 	},
 }
 
-// BundleCSVDeploymentGenerator generates all deployments defined in rv1's cluster service version (CSV). The generated
-// resource aim to have parity with OLMv0 generated Deployment resources:
-// - olm.targetNamespaces annotation is set with the opts.TargetNamespace value
-// - the deployment spec's revision history limit is set to 1
-// - merges csv annotations to the deployment template's annotations
-func BundleCSVDeploymentGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleCSVDeploymentGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if rv1 == nil {
 		return nil, fmt.Errorf("bundle cannot be nil")
 	}
 
-	// collect deployments that service webhooks
 	webhookDeployments := sets.Set[string]{}
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
 		webhookDeployments.Insert(wh.DeploymentName)
@@ -72,33 +63,23 @@ func BundleCSVDeploymentGenerator(rv1 *bundle.RegistryV1, opts render.Options) (
 
 	objs := make([]client.Object, 0, len(rv1.CSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs))
 	for _, depSpec := range rv1.CSV.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
-		// Add CSV annotations to template annotations
-		// See https://github.com/operator-framework/operator-lifecycle-manager/blob/dfd0b2bea85038d3c0d65348bc812d297f16b8d2/pkg/controller/install/deployment.go#L142
-		annotations := render.MergeMaps(rv1.CSV.Annotations, depSpec.Spec.Template.Annotations)
-
-		// In OLMv0 CSVs are annotated with the OperatorGroup's .spec.targetNamespaces
-		// See https://github.com/operator-framework/operator-lifecycle-manager/blob/dfd0b2bea85038d3c0d65348bc812d297f16b8d2/pkg/controller/operators/olm/operatorgroup.go#L279
-		// When the CSVs annotations are copied to the deployment template's annotations, they bring with it this annotation
+		annotations := MergeMaps(rv1.CSV.Annotations, depSpec.Spec.Template.Annotations)
 		annotations["olm.targetNamespaces"] = strings.Join(opts.TargetNamespaces, ",")
 		depSpec.Spec.Template.Annotations = annotations
-
-		// Hardcode the deployment with RevisionHistoryLimit=1 to maintain parity with OLMv0 behaviour.
-		// See https://github.com/operator-framework/operator-lifecycle-manager/blob/dfd0b2bea85038d3c0d65348bc812d297f16b8d2/pkg/controller/install/deployment.go#L177-L180
 		depSpec.Spec.RevisionHistoryLimit = ptr.To(int32(1))
 
-		deploymentResource := CreateDeploymentResource(
+		deploymentResource := resourceutil.CreateDeploymentResource(
 			depSpec.Name,
 			opts.InstallNamespace,
-			WithDeploymentSpec(depSpec.Spec),
-			WithLabels(depSpec.Label),
+			resourceutil.WithDeploymentSpec(depSpec.Spec),
+			resourceutil.WithLabels(depSpec.Label),
 		)
 
-		secretInfo := render.CertProvisionerFor(depSpec.Name, opts).GetCertSecretInfo()
+		secretInfo := CertProvisionerFor(depSpec.Name, opts).GetCertSecretInfo()
 		if webhookDeployments.Has(depSpec.Name) && secretInfo != nil {
 			ensureCorrectDeploymentCertVolumes(deploymentResource, *secretInfo)
 		}
 
-		// Apply deployment configuration if provided
 		applyCustomConfigToDeployment(deploymentResource, opts.DeploymentConfig)
 
 		objs = append(objs, deploymentResource)
@@ -106,15 +87,11 @@ func BundleCSVDeploymentGenerator(rv1 *bundle.RegistryV1, opts render.Options) (
 	return objs, nil
 }
 
-// BundleCSVPermissionsGenerator generates the Roles and RoleBindings based on bundle's cluster service version
-// permission spec. If the bundle is being installed in AllNamespaces mode (opts.TargetNamespaces = [”])
-// no resources will be generated as these permissions will be promoted to ClusterRole/Bunding(s)
-func BundleCSVPermissionsGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleCSVPermissionsGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if rv1 == nil {
 		return nil, fmt.Errorf("bundle cannot be nil")
 	}
 
-	// If we're in AllNamespaces mode permissions will be treated as clusterPermissions
 	if len(opts.TargetNamespaces) == 1 && opts.TargetNamespaces[0] == "" {
 		return nil, nil
 	}
@@ -128,12 +105,12 @@ func BundleCSVPermissionsGenerator(rv1 *bundle.RegistryV1, opts render.Options) 
 			name := opts.UniqueNameGenerator(fmt.Sprintf("%s-%s", rv1.CSV.Name, saName), permission)
 
 			objs = append(objs,
-				CreateRoleResource(name, ns, WithRules(permission.Rules...)),
-				CreateRoleBindingResource(
+				resourceutil.CreateRoleResource(name, ns, resourceutil.WithRules(permission.Rules...)),
+				resourceutil.CreateRoleBindingResource(
 					name,
 					ns,
-					WithSubjects(rbacv1.Subject{Kind: "ServiceAccount", Namespace: opts.InstallNamespace, Name: saName}),
-					WithRoleRef(rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "Role", Name: name}),
+					resourceutil.WithSubjects(rbacv1.Subject{Kind: "ServiceAccount", Namespace: opts.InstallNamespace, Name: saName}),
+					resourceutil.WithRoleRef(rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "Role", Name: name}),
 				),
 			)
 		}
@@ -141,26 +118,12 @@ func BundleCSVPermissionsGenerator(rv1 *bundle.RegistryV1, opts render.Options) 
 	return objs, nil
 }
 
-// BundleCSVClusterPermissionsGenerator generates ClusterRoles and ClusterRoleBindings based on the bundle's
-// cluster service version clusterPermission spec. If the bundle is being installed in AllNamespaces mode
-// (opts.TargetNamespaces = [”]), the CSV's permission spec will be promoted to ClusterRole and ClusterRoleBinding
-// resources. To keep parity with OLMv0, these will also include an extra rule to get, list, watch namespaces
-// (see https://github.com/operator-framework/operator-lifecycle-manager/blob/dfd0b2bea85038d3c0d65348bc812d297f16b8d2/pkg/controller/operators/olm/operatorgroup.go#L539)
-// The reasoning for this added rule is:
-//   - An operator author designing for both SingleNamespace and AllNamespaces install modes should
-//     only declare the minimum permissions needed — i.e., no cluster-scoped permissions in its CSV.
-//   - When OLM places that operator into a global OperatorGroup, it lifts the Roles to ClusterRoles.
-//     But some operators may need to discover namespaces to function globally, which they didn't need
-//     (and shouldn't have requested) in single-namespace mode.
-//   - So OLM automatically appends get/list/watch on namespaces during the lift, bridging the gap
-//     without requiring the operator author to over-request permissions upfront.
-func BundleCSVClusterPermissionsGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleCSVClusterPermissionsGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if rv1 == nil {
 		return nil, fmt.Errorf("bundle cannot be nil")
 	}
 	clusterPermissions := rv1.CSV.Spec.InstallStrategy.StrategySpec.ClusterPermissions
 
-	// If we're in AllNamespaces mode, promote the permissions to clusterPermissions
 	if len(opts.TargetNamespaces) == 1 && opts.TargetNamespaces[0] == "" {
 		for _, p := range rv1.CSV.Spec.InstallStrategy.StrategySpec.Permissions {
 			p.Rules = append(p.Rules, rbacv1.PolicyRule{
@@ -177,23 +140,18 @@ func BundleCSVClusterPermissionsGenerator(rv1 *bundle.RegistryV1, opts render.Op
 		saName := saNameOrDefault(permission.ServiceAccountName)
 		name := opts.UniqueNameGenerator(fmt.Sprintf("%s-%s", rv1.CSV.Name, saName), permission)
 		objs = append(objs,
-			CreateClusterRoleResource(name, WithRules(permission.Rules...)),
-			CreateClusterRoleBindingResource(
+			resourceutil.CreateClusterRoleResource(name, resourceutil.WithRules(permission.Rules...)),
+			resourceutil.CreateClusterRoleBindingResource(
 				name,
-				WithSubjects(rbacv1.Subject{Kind: "ServiceAccount", Namespace: opts.InstallNamespace, Name: saName}),
-				WithRoleRef(rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "ClusterRole", Name: name}),
+				resourceutil.WithSubjects(rbacv1.Subject{Kind: "ServiceAccount", Namespace: opts.InstallNamespace, Name: saName}),
+				resourceutil.WithRoleRef(rbacv1.RoleRef{APIGroup: rbacv1.GroupName, Kind: "ClusterRole", Name: name}),
 			),
 		)
 	}
 	return objs, nil
 }
 
-// BundleCSVServiceAccountGenerator generates ServiceAccount resources based on the bundle's cluster service version
-// permission and clusterPermission spec. One ServiceAccount resource is created / referenced service account (i.e.
-// if multiple permissions reference the same service account, only one resource will be generated).
-// If a clusterPermission, or permission, references an empty (”) service account, this is considered to be the
-// namespace 'default' service account. A resource for the namespace 'default' service account is not generated.
-func BundleCSVServiceAccountGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleCSVServiceAccountGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if rv1 == nil {
 		return nil, fmt.Errorf("bundle cannot be nil")
 	}
@@ -209,23 +167,18 @@ func BundleCSVServiceAccountGenerator(rv1 *bundle.RegistryV1, opts render.Option
 
 	objs := make([]client.Object, 0, len(serviceAccountNames))
 	for _, serviceAccountName := range serviceAccountNames.UnsortedList() {
-		// no need to generate the default service account
 		if serviceAccountName != "default" {
-			objs = append(objs, CreateServiceAccountResource(serviceAccountName, opts.InstallNamespace))
+			objs = append(objs, resourceutil.CreateServiceAccountResource(serviceAccountName, opts.InstallNamespace))
 		}
 	}
 	return objs, nil
 }
 
-// BundleCRDGenerator generates CustomResourceDefinition resources from the registry+v1 bundle. If the CRD is referenced
-// by any conversion webhook defined in the bundle's cluster service version spec, the CRD is modified
-// by the CertificateProvider in opts to add any annotations or modifications necessary for certificate injection.
-func BundleCRDGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleCRDGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if rv1 == nil {
 		return nil, fmt.Errorf("bundle cannot be nil")
 	}
 
-	// collect deployments to crds with conversion webhooks
 	crdToDeploymentMap := map[string]v1alpha1.WebhookDescription{}
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
 		if wh.Type != v1alpha1.ConversionWebhook {
@@ -243,20 +196,16 @@ func BundleCRDGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.O
 	for _, crd := range rv1.CRDs {
 		cp := crd.DeepCopy()
 		if cw, ok := crdToDeploymentMap[crd.Name]; ok {
-			// OLMv0 behaviour parity
-			// See https://github.com/operator-framework/operator-lifecycle-manager/blob/dfd0b2bea85038d3c0d65348bc812d297f16b8d2/pkg/controller/install/webhook.go#L232
 			if crd.Spec.PreserveUnknownFields {
 				return nil, fmt.Errorf("custom resource definition '%s' must have .spec.preserveUnknownFields set to false to let API Server call webhook to do the conversion", crd.Name)
 			}
 
-			// OLMv0 behaviour parity
-			// https://github.com/operator-framework/operator-lifecycle-manager/blob/dfd0b2bea85038d3c0d65348bc812d297f16b8d2/pkg/controller/install/webhook.go#L242
 			conversionWebhookPath := "/"
 			if cw.WebhookPath != nil {
 				conversionWebhookPath = *cw.WebhookPath
 			}
 
-			certProvisioner := render.CertProvisionerFor(cw.DeploymentName, opts)
+			certProvisioner := CertProvisionerFor(cw.DeploymentName, opts)
 			cp.Spec.Conversion = &apiextensionsv1.CustomResourceConversion{
 				Strategy: apiextensionsv1.WebhookConverter,
 				Webhook: &apiextensionsv1.WebhookConversion{
@@ -281,9 +230,7 @@ func BundleCRDGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.O
 	return objs, nil
 }
 
-// BundleAdditionalResourcesGenerator generates resources for the additional resources included in the
-// bundle. If the bundle resource is namespace scoped, its namespace will be set to the value of opts.InstallNamespace.
-func BundleAdditionalResourcesGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleAdditionalResourcesGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if rv1 == nil {
 		return nil, fmt.Errorf("bundle cannot be nil")
 	}
@@ -304,10 +251,7 @@ func BundleAdditionalResourcesGenerator(rv1 *bundle.RegistryV1, opts render.Opti
 	return objs, nil
 }
 
-// BundleValidatingWebhookResourceGenerator generates ValidatingAdmissionWebhookConfiguration resources based on
-// the bundle's cluster service version spec. The resource is modified by the CertificateProvider in opts
-// to add any annotations or modifications necessary for certificate injection.
-func BundleValidatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleValidatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if rv1 == nil {
 		return nil, fmt.Errorf("bundle cannot be nil")
 	}
@@ -319,12 +263,12 @@ func BundleValidatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts rende
 		if wh.Type != v1alpha1.ValidatingAdmissionWebhook {
 			continue
 		}
-		certProvisioner := render.CertProvisionerFor(wh.DeploymentName, opts)
+		certProvisioner := CertProvisionerFor(wh.DeploymentName, opts)
 		webhookName := strings.TrimSuffix(wh.GenerateName, "-")
-		webhookResource := CreateValidatingWebhookConfigurationResource(
+		webhookResource := resourceutil.CreateValidatingWebhookConfigurationResource(
 			webhookName,
 			opts.InstallNamespace,
-			WithValidatingWebhooks(
+			resourceutil.WithValidatingWebhooks(
 				admissionregistrationv1.ValidatingWebhook{
 					Name:                    webhookName,
 					Rules:                   wh.Rules,
@@ -342,8 +286,6 @@ func BundleValidatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts rende
 							Port:      &wh.ContainerPort,
 						},
 					},
-					// It is safe to create a namespace selector even for cluster scoped CRs. A webhook
-					// is never skipped for cluster scoped CRs.
 					NamespaceSelector: getWebhookNamespaceSelector(opts.TargetNamespaces),
 				},
 			),
@@ -356,10 +298,7 @@ func BundleValidatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts rende
 	return objs, nil
 }
 
-// BundleMutatingWebhookResourceGenerator generates MutatingAdmissionWebhookConfiguration resources based on
-// the bundle's cluster service version spec. The resource is modified by the CertificateProvider in opts
-// to add any annotations or modifications necessary for certificate injection.
-func BundleMutatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleMutatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if rv1 == nil {
 		return nil, fmt.Errorf("bundle cannot be nil")
 	}
@@ -370,12 +309,12 @@ func BundleMutatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts render.
 		if wh.Type != v1alpha1.MutatingAdmissionWebhook {
 			continue
 		}
-		certProvisioner := render.CertProvisionerFor(wh.DeploymentName, opts)
+		certProvisioner := CertProvisionerFor(wh.DeploymentName, opts)
 		webhookName := strings.TrimSuffix(wh.GenerateName, "-")
-		webhookResource := CreateMutatingWebhookConfigurationResource(
+		webhookResource := resourceutil.CreateMutatingWebhookConfigurationResource(
 			webhookName,
 			opts.InstallNamespace,
-			WithMutatingWebhooks(
+			resourceutil.WithMutatingWebhooks(
 				admissionregistrationv1.MutatingWebhook{
 					Name:                    webhookName,
 					Rules:                   wh.Rules,
@@ -394,9 +333,7 @@ func BundleMutatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts render.
 						},
 					},
 					ReinvocationPolicy: wh.ReinvocationPolicy,
-					// It is safe to create a namespace selector even for cluster scoped CRs. A webhook
-					// is never skipped for cluster scoped CRs.
-					NamespaceSelector: getWebhookNamespaceSelector(opts.TargetNamespaces),
+					NamespaceSelector:  getWebhookNamespaceSelector(opts.TargetNamespaces),
 				},
 			),
 		)
@@ -408,15 +345,11 @@ func BundleMutatingWebhookResourceGenerator(rv1 *bundle.RegistryV1, opts render.
 	return objs, nil
 }
 
-// BundleDeploymentServiceResourceGenerator generates Service resources that support, e.g. the webhooks,
-// defined in the bundle's cluster service version spec. The resource is modified by the CertificateProvider in opts
-// to add any annotations or modifications necessary for certificate injection.
-func BundleDeploymentServiceResourceGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleDeploymentServiceResourceGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if rv1 == nil {
 		return nil, fmt.Errorf("bundle cannot be nil")
 	}
 
-	// collect webhook service ports
 	webhookServicePortsByDeployment := map[string]sets.Set[corev1.ServicePort]{}
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
 		if _, ok := webhookServicePortsByDeployment[wh.DeploymentName]; !ok {
@@ -442,11 +375,11 @@ func BundleDeploymentServiceResourceGenerator(rv1 *bundle.RegistryV1, opts rende
 			labelSelector = deploymentSpec.Spec.Selector.MatchLabels
 		}
 
-		certProvisioner := render.CertProvisionerFor(deploymentSpec.Name, opts)
-		serviceResource := CreateServiceResource(
+		certProvisioner := CertProvisionerFor(deploymentSpec.Name, opts)
+		serviceResource := resourceutil.CreateServiceResource(
 			certProvisioner.ServiceName,
 			opts.InstallNamespace,
-			WithServiceSpec(
+			resourceutil.WithServiceSpec(
 				corev1.ServiceSpec{
 					Ports:    ports,
 					Selector: labelSelector,
@@ -463,9 +396,7 @@ func BundleDeploymentServiceResourceGenerator(rv1 *bundle.RegistryV1, opts rende
 	return objs, nil
 }
 
-// CertProviderResourceGenerator generates any resources necessary for the CertificateProvider
-// in opts to function correctly, e.g. Issuer or Certificate resources.
-func CertProviderResourceGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func certProviderResourceGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	deploymentsWithWebhooks := sets.Set[string]{}
 
 	for _, wh := range rv1.CSV.Spec.WebhookDefinitions {
@@ -474,7 +405,7 @@ func CertProviderResourceGenerator(rv1 *bundle.RegistryV1, opts render.Options) 
 
 	var objs []client.Object
 	for _, depName := range deploymentsWithWebhooks.UnsortedList() {
-		certCfg := render.CertProvisionerFor(depName, opts)
+		certCfg := CertProvisionerFor(depName, opts)
 		certObjs, err := certCfg.AdditionalObjects()
 		if err != nil {
 			return nil, err
@@ -508,13 +439,7 @@ func getWebhookServicePort(wh v1alpha1.WebhookDescription) corev1.ServicePort {
 	}
 }
 
-// ensureCorrectDeploymentCertVolumes ensures the deployment has the correct certificate volume mounts by
-// - removing all existing volumes with protected certificate volume names (i.e. webhook-cert and apiservice-cert)
-// - removing all existing volumes that point to the protected certificate paths (e.g. /tmp/k8s-webhook-server/serving-certs)
-// - adding the correct certificate volumes with the correct configuration
-// - applying the same changes to all container volume mounts
-func ensureCorrectDeploymentCertVolumes(dep *appsv1.Deployment, certSecretInfo render.CertSecretInfo) {
-	// collect volumes and paths to replace
+func ensureCorrectDeploymentCertVolumes(dep *appsv1.Deployment, certSecretInfo CertSecretInfo) {
 	volumesToRemove := sets.New[string]()
 	protectedVolumePaths := sets.New[string]()
 	certVolumes := make([]corev1.Volume, 0, len(certVolumeConfigs))
@@ -554,7 +479,6 @@ func ensureCorrectDeploymentCertVolumes(dep *appsv1.Deployment, certSecretInfo r
 		}
 	}
 
-	// update pod volumes
 	dep.Spec.Template.Spec.Volumes = slices.Concat(
 		slices.DeleteFunc(dep.Spec.Template.Spec.Volumes, func(v corev1.Volume) bool {
 			return volumesToRemove.Has(v.Name)
@@ -562,7 +486,6 @@ func ensureCorrectDeploymentCertVolumes(dep *appsv1.Deployment, certSecretInfo r
 		certVolumes,
 	)
 
-	// update container volume mounts
 	for i := range dep.Spec.Template.Spec.Containers {
 		dep.Spec.Template.Spec.Containers[i].VolumeMounts = slices.Concat(
 			slices.DeleteFunc(dep.Spec.Template.Spec.Containers[i].VolumeMounts, func(v corev1.VolumeMount) bool {
@@ -573,8 +496,6 @@ func ensureCorrectDeploymentCertVolumes(dep *appsv1.Deployment, certSecretInfo r
 	}
 }
 
-// getWebhookNamespaceSelector returns a label selector that matches any namespace in targetNamespaces.
-// If targetNamespaces is empty, nil, or includes "" (signifying all namespaces) nil is returned.
 func getWebhookNamespaceSelector(targetNamespaces []string) *metav1.LabelSelector {
 	if len(targetNamespaces) > 0 && !slices.Contains(targetNamespaces, "") {
 		return &metav1.LabelSelector{
@@ -590,15 +511,11 @@ func getWebhookNamespaceSelector(targetNamespaces []string) *metav1.LabelSelecto
 	return nil
 }
 
-// applyCustomConfigToDeployment applies the deployment configuration to all containers in the deployment.
-// It follows OLMv0 behavior for applying configuration to deployments.
-// See https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go
-func applyCustomConfigToDeployment(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyCustomConfigToDeployment(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if config == nil {
 		return
 	}
 
-	// Apply all configuration modifications following OLMv0 behavior
 	applyEnvironmentConfig(deployment, config)
 	applyEnvironmentFromConfig(deployment, config)
 	applyVolumeConfig(deployment, config)
@@ -610,11 +527,7 @@ func applyCustomConfigToDeployment(deployment *appsv1.Deployment, config *render
 	applyAnnotationsConfig(deployment, config)
 }
 
-// applyEnvironmentConfig applies environment variables to all containers in the deployment.
-// Environment variables from config override existing environment variables with the same name.
-// This follows OLMv0 behavior:
-// https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go#L11-L27
-func applyEnvironmentConfig(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyEnvironmentConfig(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if len(config.Env) == 0 {
 		return
 	}
@@ -622,30 +535,22 @@ func applyEnvironmentConfig(deployment *appsv1.Deployment, config *render.Deploy
 	for i := range deployment.Spec.Template.Spec.Containers {
 		container := &deployment.Spec.Template.Spec.Containers[i]
 
-		// Create a map to track existing env var names for override behavior
 		existingEnvMap := make(map[string]int)
 		for idx, env := range container.Env {
 			existingEnvMap[env.Name] = idx
 		}
 
-		// Apply config env vars, overriding existing ones with same name
 		for _, configEnv := range config.Env {
 			if existingIdx, exists := existingEnvMap[configEnv.Name]; exists {
-				// Override existing env var
 				container.Env[existingIdx] = configEnv
 			} else {
-				// Append new env var
 				container.Env = append(container.Env, configEnv)
 			}
 		}
 	}
 }
 
-// applyEnvironmentFromConfig appends EnvFrom sources to all containers in the deployment.
-// Duplicate EnvFrom sources are not added.
-// This follows OLMv0 behavior:
-// https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go#L65-L81
-func applyEnvironmentFromConfig(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyEnvironmentFromConfig(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if len(config.EnvFrom) == 0 {
 		return
 	}
@@ -653,7 +558,6 @@ func applyEnvironmentFromConfig(deployment *appsv1.Deployment, config *render.De
 	for i := range deployment.Spec.Template.Spec.Containers {
 		container := &deployment.Spec.Template.Spec.Containers[i]
 
-		// Check for duplicates before appending
 		for _, configEnvFrom := range config.EnvFrom {
 			isDuplicate := false
 			for _, existingEnvFrom := range container.EnvFrom {
@@ -669,11 +573,7 @@ func applyEnvironmentFromConfig(deployment *appsv1.Deployment, config *render.De
 	}
 }
 
-// applyVolumeConfig merges volumes into the deployment's pod spec.
-// Volumes from config override existing volumes with the same name.
-// This differs from OLMv0, which appends volumes without checking for duplicates:
-// https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go#L104-L117
-func applyVolumeConfig(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyVolumeConfig(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if len(config.Volumes) == 0 {
 		return
 	}
@@ -692,11 +592,7 @@ func applyVolumeConfig(deployment *appsv1.Deployment, config *render.DeploymentC
 	}
 }
 
-// applyVolumeMountConfig merges volume mounts into all containers in the deployment.
-// Volume mounts from config override existing volume mounts with the same name.
-// This differs from OLMv0, which appends volume mounts without checking for duplicates:
-// https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go#L149-L165
-func applyVolumeMountConfig(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyVolumeMountConfig(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if len(config.VolumeMounts) == 0 {
 		return
 	}
@@ -719,16 +615,11 @@ func applyVolumeMountConfig(deployment *appsv1.Deployment, config *render.Deploy
 	}
 }
 
-// applyTolerationsConfig appends tolerations to the deployment's pod spec.
-// Duplicate tolerations are not added.
-// This follows OLMv0 behavior:
-// https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go#L197-L209
-func applyTolerationsConfig(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyTolerationsConfig(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if len(config.Tolerations) == 0 {
 		return
 	}
 
-	// Check for duplicates before appending
 	for _, configToleration := range config.Tolerations {
 		isDuplicate := false
 		for _, existingToleration := range deployment.Spec.Template.Spec.Tolerations {
@@ -743,11 +634,7 @@ func applyTolerationsConfig(deployment *appsv1.Deployment, config *render.Deploy
 	}
 }
 
-// applyResourcesConfig applies resource requirements to all containers in the deployment.
-// This completely replaces existing resource requirements.
-// This follows OLMv0 behavior:
-// https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go#L236-L255
-func applyResourcesConfig(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyResourcesConfig(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if config.Resources == nil {
 		return
 	}
@@ -758,11 +645,7 @@ func applyResourcesConfig(deployment *appsv1.Deployment, config *render.Deployme
 	}
 }
 
-// applyNodeSelectorConfig applies node selector to the deployment's pod spec.
-// This completely replaces existing node selector.
-// This follows OLMv0 behavior:
-// https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go#L257-L271
-func applyNodeSelectorConfig(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyNodeSelectorConfig(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if config.NodeSelector == nil {
 		return
 	}
@@ -770,8 +653,6 @@ func applyNodeSelectorConfig(deployment *appsv1.Deployment, config *render.Deplo
 	deployment.Spec.Template.Spec.NodeSelector = config.NodeSelector
 }
 
-// isAffinityEmpty checks if an Affinity object is semantically empty.
-// This accounts for YAML unmarshaling which creates empty slices instead of nil.
 func isAffinityEmpty(a *corev1.Affinity) bool {
 	if a == nil {
 		return true
@@ -781,7 +662,6 @@ func isAffinityEmpty(a *corev1.Affinity) bool {
 		isPodAntiAffinityEmpty(a.PodAntiAffinity)
 }
 
-// isNodeAffinityEmpty checks if a NodeAffinity object is semantically empty.
 func isNodeAffinityEmpty(na *corev1.NodeAffinity) bool {
 	if na == nil {
 		return true
@@ -791,7 +671,6 @@ func isNodeAffinityEmpty(na *corev1.NodeAffinity) bool {
 	return requiredEmpty && len(na.PreferredDuringSchedulingIgnoredDuringExecution) == 0
 }
 
-// isPodAffinityEmpty checks if a PodAffinity object is semantically empty.
 func isPodAffinityEmpty(pa *corev1.PodAffinity) bool {
 	if pa == nil {
 		return true
@@ -800,7 +679,6 @@ func isPodAffinityEmpty(pa *corev1.PodAffinity) bool {
 		len(pa.PreferredDuringSchedulingIgnoredDuringExecution) == 0
 }
 
-// isPodAntiAffinityEmpty checks if a PodAntiAffinity object is semantically empty.
 func isPodAntiAffinityEmpty(paa *corev1.PodAntiAffinity) bool {
 	if paa == nil {
 		return true
@@ -809,31 +687,18 @@ func isPodAntiAffinityEmpty(paa *corev1.PodAntiAffinity) bool {
 		len(paa.PreferredDuringSchedulingIgnoredDuringExecution) == 0
 }
 
-// applyAffinityConfig applies affinity configuration to the deployment's pod spec.
-// This follows OLMv0 behavior where:
-//   - nil affinity means "don't touch" the deployment's existing affinity
-//   - empty affinity ({}) means "erase" the deployment's existing affinity
-//   - non-nil sub-attributes override the corresponding deployment sub-attributes
-//   - nil sub-attributes within a non-empty affinity are left unchanged
-//   - empty sub-attributes ({}) erase the corresponding deployment sub-attributes
-//
-// See: https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go#L273-L341
-func applyAffinityConfig(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyAffinityConfig(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if config.Affinity == nil {
 		return
 	}
 
 	podSpec := &deployment.Spec.Template.Spec
 
-	// Check if the config specifies an empty affinity object with all fields unset.
-	// This is different from having empty sub-fields - an empty affinity {} with no fields
-	// means erase everything, while affinity with empty sub-fields means selectively erase.
 	configHasNoFields := config.Affinity.NodeAffinity == nil &&
 		config.Affinity.PodAffinity == nil &&
 		config.Affinity.PodAntiAffinity == nil
 
 	if configHasNoFields {
-		// Config is affinity: {} with no fields - erase entire affinity
 		podSpec.Affinity = nil
 		return
 	}
@@ -871,16 +736,11 @@ func applyAffinityConfig(deployment *appsv1.Deployment, config *render.Deploymen
 	}
 }
 
-// applyAnnotationsConfig applies annotations to the deployment and its pod template.
-// Existing deployment and pod annotations take precedence over config annotations (no override).
-// This follows OLMv0 behavior:
-// https://github.com/operator-framework/operator-lifecycle-manager/blob/v0.39.0/pkg/controller/operators/olm/overrides/inject/inject.go#L343-L378
-func applyAnnotationsConfig(deployment *appsv1.Deployment, config *render.DeploymentConfig) {
+func applyAnnotationsConfig(deployment *appsv1.Deployment, config *DeploymentConfig) {
 	if len(config.Annotations) == 0 {
 		return
 	}
 
-	// Apply to deployment metadata
 	if deployment.Annotations == nil {
 		deployment.Annotations = make(map[string]string)
 	}
@@ -890,7 +750,6 @@ func applyAnnotationsConfig(deployment *appsv1.Deployment, config *render.Deploy
 		}
 	}
 
-	// Apply to pod template metadata
 	if deployment.Spec.Template.Annotations == nil {
 		deployment.Spec.Template.Annotations = make(map[string]string)
 	}
@@ -913,7 +772,7 @@ var (
 	}
 )
 
-func BundleProvidedAPIsClusterRolesGenerator(rv1 *bundle.RegistryV1, opts render.Options) ([]client.Object, error) {
+func bundleProvidedAPIsClusterRolesGenerator(rv1 *bundle.RegistryV1, opts options) ([]client.Object, error) {
 	if !opts.ProvidedAPIsClusterRoles {
 		return nil, nil
 	}
@@ -961,4 +820,21 @@ func BundleProvidedAPIsClusterRolesGenerator(rv1 *bundle.RegistryV1, opts render
 	}
 
 	return objects, nil
+}
+
+// defaultGenerators returns the standard set of resource generators for registry+v1 bundles.
+func defaultGenerators() []resourceGenerator {
+	return []resourceGenerator{
+		bundleCSVServiceAccountGenerator,
+		bundleCSVPermissionsGenerator,
+		bundleCSVClusterPermissionsGenerator,
+		bundleCRDGenerator,
+		bundleAdditionalResourcesGenerator,
+		bundleCSVDeploymentGenerator,
+		bundleValidatingWebhookResourceGenerator,
+		bundleMutatingWebhookResourceGenerator,
+		bundleDeploymentServiceResourceGenerator,
+		certProviderResourceGenerator,
+		bundleProvidedAPIsClusterRolesGenerator,
+	}
 }

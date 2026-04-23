@@ -15,20 +15,19 @@ import (
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
 	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/render"
-	"github.com/perdasilva/regv1render/internal/render/registryv1/validator"
+	"github.com/perdasilva/regv1render/internal/render/validator"
 	"github.com/perdasilva/regv1render/internal/util/testutil/clusterserviceversion"
 )
 
 var v = validator.BundleValidator{}
 
-func validationErrorsForCheck(err error, checkName string) []*render.ValidationError {
+func validationErrorsForCheck(err error, checkName string) []*validator.ValidationError {
 	if err == nil {
 		return nil
 	}
-	var result []*render.ValidationError
+	var result []*validator.ValidationError
 	for _, e := range unwrapAll(err) {
-		var ve *render.ValidationError
+		var ve *validator.ValidationError
 		if errors.As(e, &ve) && ve.Check == checkName {
 			result = append(result, ve)
 		}

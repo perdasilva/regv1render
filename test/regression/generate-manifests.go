@@ -19,7 +19,6 @@ import (
 	"github.com/perdasilva/regv1render/internal/bundle/source"
 	"github.com/perdasilva/regv1render/internal/render"
 	"github.com/perdasilva/regv1render/internal/render/certproviders"
-	"github.com/perdasilva/regv1render/internal/render/registryv1"
 )
 
 func main() {
@@ -263,7 +262,7 @@ func generateManifests(outputPath, bundleDir, installNamespace, watchNamespace s
 		os.Exit(1)
 	}
 
-	b := registryv1.NewRendererBuilder()
+	b := render.NewRendererBuilder()
 	if configureBuilder != nil {
 		configureBuilder(b)
 	}
