@@ -29,13 +29,13 @@ func Test_BundleRenderer_NoConfig(t *testing.T) {
 	require.Empty(t, objs)
 }
 
+type failingValidator struct{ err error }
+
+func (f failingValidator) Validate(_ *bundle.RegistryV1) error { return f.err }
+
 func Test_BundleRenderer_ValidatesBundle(t *testing.T) {
 	renderer := render.BundleRenderer{
-		BundleValidator: render.BundleValidator{
-			func(v1 *bundle.RegistryV1) []error {
-				return []error{errors.New("this bundle is invalid")}
-			},
-		},
+		BundleValidator: failingValidator{err: errors.New("this bundle is invalid")},
 	}
 	objs, err := renderer.Render(bundle.RegistryV1{}, "")
 	require.Nil(t, objs)
@@ -365,22 +365,6 @@ func Test_BundleRenderer_ReturnsResourceGeneratorErrors(t *testing.T) {
 	require.Nil(t, objs)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "generator error")
-}
-
-func Test_BundleValidatorCallsAllValidationFnsInOrder(t *testing.T) {
-	actual := ""
-	val := render.BundleValidator{
-		func(v1 *bundle.RegistryV1) []error {
-			actual += "h"
-			return nil
-		},
-		func(v1 *bundle.RegistryV1) []error {
-			actual += "i"
-			return nil
-		},
-	}
-	require.NoError(t, val.Validate(nil))
-	require.Equal(t, "hi", actual)
 }
 
 func Test_WithDeploymentConfig(t *testing.T) {
