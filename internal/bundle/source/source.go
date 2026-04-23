@@ -15,6 +15,7 @@ import (
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/operator-framework/operator-registry/alpha/property"
+	"github.com/operator-framework/operator-registry/pkg/registry"
 
 	"github.com/perdasilva/rv1/internal/bundle"
 )
@@ -67,7 +68,7 @@ func (f fsBundleSource) GetBundle() (bundle.RegistryV1, error) {
 	if err != nil {
 		return reg, err
 	}
-	annotationsFile := bundle.AnnotationsFile{}
+	annotationsFile := registry.AnnotationsFile{}
 	if err := yaml.Unmarshal(annotationsFileData, &annotationsFile); err != nil {
 		return reg, err
 	}
