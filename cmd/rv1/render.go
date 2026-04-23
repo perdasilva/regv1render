@@ -109,8 +109,9 @@ Examples:
 				return fmt.Errorf("parsing bundle: %w", err)
 			}
 
-			opts := buildRenderOptions(cfg, watchNamespaces)
-			objs, err := regv1render.Render(rv1, installNamespace, opts...)
+			renderer := buildRenderer(cfg)
+			renderOpts := buildRenderOptions(cfg, watchNamespaces)
+			objs, err := renderer.Render(rv1, installNamespace, renderOpts...)
 			if err != nil {
 				return fmt.Errorf("rendering bundle: %w", err)
 			}
@@ -141,24 +142,29 @@ func loadConfig(path string) (renderConfig, error) {
 	return cfg, nil
 }
 
-func buildRenderOptions(cfg renderConfig, watchNamespaces []string) []regv1render.Option {
-	var opts []regv1render.Option
+func buildRenderer(cfg renderConfig) *regv1render.Renderer {
+	b := regv1render.NewRendererBuilder()
+	if cfg.DeploymentConfig != nil {
+		b.WithDeploymentConfig(cfg.DeploymentConfig)
+	}
+	if p := cfg.CertificateProvider; p != nil {
+		switch p.Type {
+		case certProviderCertManager:
+			b.WithCertificateProvider(regv1render.CertManagerProvider{})
+		case certProviderOpenShiftServiceCA:
+			b.WithCertificateProvider(regv1render.OpenShiftServiceCAProvider{})
+		}
+	}
+	return b.Build()
+}
+
+func buildRenderOptions(cfg renderConfig, watchNamespaces []string) []regv1render.RenderOption {
+	var opts []regv1render.RenderOption
 	if len(watchNamespaces) > 0 {
 		opts = append(opts, regv1render.WithTargetNamespaces(watchNamespaces...))
 	}
 	if cfg.ProvidedAPIsClusterRoles {
 		opts = append(opts, regv1render.WithProvidedAPIsClusterRoles())
-	}
-	if cfg.DeploymentConfig != nil {
-		opts = append(opts, regv1render.WithDeploymentConfig(cfg.DeploymentConfig))
-	}
-	if p := cfg.CertificateProvider; p != nil {
-		switch p.Type {
-		case certProviderCertManager:
-			opts = append(opts, regv1render.WithCertificateProvider(regv1render.CertManagerProvider{}))
-		case certProviderOpenShiftServiceCA:
-			opts = append(opts, regv1render.WithCertificateProvider(regv1render.OpenShiftServiceCAProvider{}))
-		}
 	}
 	return opts
 }

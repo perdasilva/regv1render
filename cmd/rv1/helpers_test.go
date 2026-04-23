@@ -19,6 +19,7 @@ func renderBundle(source regv1render.BundleSource, installNamespace string, watc
 	if err != nil {
 		return nil, err
 	}
-	opts := buildRenderOptions(cfg, watchNamespaces)
-	return regv1render.Render(rv1, installNamespace, opts...)
+	renderer := buildRenderer(cfg)
+	renderOpts := buildRenderOptions(cfg, watchNamespaces)
+	return renderer.Render(rv1, installNamespace, renderOpts...)
 }

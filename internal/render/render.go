@@ -13,20 +13,23 @@ import (
 	"github.com/perdasilva/regv1render/internal/bundle"
 )
 
+// DeploymentConfig is a type alias for v1alpha1.SubscriptionConfig
+// to maintain clear naming in the OLMv1 context while reusing the v0 type.
+type DeploymentConfig = v1alpha1.SubscriptionConfig
+
 // BundleValidator validates a RegistryV1 bundle.
 type BundleValidator interface {
 	Validate(rv1 *bundle.RegistryV1) error
 }
 
-// ResourceGenerator generates resources given a registry+v1 bundle and options
+// ResourceGenerator generates resources given a registry+v1 bundle and options.
 type ResourceGenerator func(rv1 *bundle.RegistryV1, opts Options) ([]client.Object, error)
 
 func (g ResourceGenerator) GenerateResources(rv1 *bundle.RegistryV1, opts Options) ([]client.Object, error) {
 	return g(rv1, opts)
 }
 
-// ResourceGenerators aggregates generators. Its GenerateResource method will call all of its generators and return
-// generated resources.
+// ResourceGenerators aggregates generators.
 type ResourceGenerators []ResourceGenerator
 
 func (r ResourceGenerators) GenerateResources(rv1 *bundle.RegistryV1, opts Options) ([]client.Object, error) {
@@ -42,109 +45,18 @@ func (r ResourceGenerators) GenerateResources(rv1 *bundle.RegistryV1, opts Optio
 	return renderedObjects, nil
 }
 
-func (r ResourceGenerators) ResourceGenerator() ResourceGenerator {
-	return r.GenerateResources
-}
-
+// UniqueNameGenerator produces deterministic unique names.
 type UniqueNameGenerator func(string, interface{}) string
 
+// Options holds the resolved configuration for a render call.
+// This is an internal type passed to generators.
 type Options struct {
-	InstallNamespace    string
-	TargetNamespaces    []string
-	UniqueNameGenerator UniqueNameGenerator
-	CertificateProvider CertificateProvider
-	// DeploymentConfig contains optional customizations to apply to CSV deployments.
-	// If nil, no customizations are applied.
-	DeploymentConfig     *DeploymentConfig
-	AdditionalGenerators []ResourceGenerator
-}
-
-func (o *Options) apply(opts ...Option) *Options {
-	for _, opt := range opts {
-		if opt != nil {
-			opt(o)
-		}
-	}
-	return o
-}
-
-func (o *Options) validate(rv1 *bundle.RegistryV1) (*Options, []error) {
-	var errs []error
-	if o.UniqueNameGenerator == nil {
-		errs = append(errs, errors.New("unique name generator must be specified"))
-	}
-	if err := validateTargetNamespaces(rv1, o.InstallNamespace, o.TargetNamespaces); err != nil {
-		errs = append(errs, fmt.Errorf("invalid target namespaces %v: %w", o.TargetNamespaces, err))
-	}
-	return o, errs
-}
-
-type Option func(*Options)
-
-// WithTargetNamespaces sets the target namespaces to be used when rendering the bundle
-// The value will only be used if len(namespaces) > 0. Otherwise, the default value for the bundle
-// derived from its install mode support will be used (if such a value can be defined).
-func WithTargetNamespaces(namespaces ...string) Option {
-	return func(o *Options) {
-		if len(namespaces) > 0 {
-			o.TargetNamespaces = namespaces
-		}
-	}
-}
-
-func WithUniqueNameGenerator(generator UniqueNameGenerator) Option {
-	return func(o *Options) {
-		o.UniqueNameGenerator = generator
-	}
-}
-
-func WithCertificateProvider(provider CertificateProvider) Option {
-	return func(o *Options) {
-		o.CertificateProvider = provider
-	}
-}
-
-// WithDeploymentConfig sets the deployment configuration to apply to CSV deployments.
-// If deploymentConfig is nil, no customizations are applied.
-func WithDeploymentConfig(deploymentConfig *DeploymentConfig) Option {
-	return func(o *Options) {
-		o.DeploymentConfig = deploymentConfig
-	}
-}
-
-type BundleRenderer struct {
-	BundleValidator    BundleValidator
-	ResourceGenerators []ResourceGenerator
-}
-
-func (r BundleRenderer) Render(rv1 bundle.RegistryV1, installNamespace string, opts ...Option) ([]client.Object, error) {
-	// validate bundle
-	if r.BundleValidator != nil {
-		if err := r.BundleValidator.Validate(&rv1); err != nil {
-			return nil, err
-		}
-	}
-
-	// generate bundle objects
-	genOpts, errs := (&Options{
-		// default options
-		InstallNamespace:    installNamespace,
-		TargetNamespaces:    defaultTargetNamespacesForBundle(&rv1),
-		UniqueNameGenerator: DefaultUniqueNameGenerator,
-		CertificateProvider: nil,
-	}).apply(opts...).validate(&rv1)
-
-	if len(errs) > 0 {
-		return nil, fmt.Errorf("invalid option(s): %w", errors.Join(errs...))
-	}
-
-	allGenerators := append(r.ResourceGenerators, genOpts.AdditionalGenerators...)
-	objs, err := ResourceGenerators(allGenerators).GenerateResources(&rv1, *genOpts)
-	if err != nil {
-		return nil, err
-	}
-
-	return objs, nil
+	InstallNamespace         string
+	TargetNamespaces         []string
+	UniqueNameGenerator      UniqueNameGenerator
+	CertificateProvider      CertificateProvider
+	DeploymentConfig         *DeploymentConfig
+	ProvidedAPIsClusterRoles bool
 }
 
 func DefaultUniqueNameGenerator(base string, o interface{}) string {

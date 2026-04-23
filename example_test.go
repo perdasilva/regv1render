@@ -137,11 +137,11 @@ func ExampleFromBundle() {
 	// CSV: my-operator.v1.0.0
 }
 
-func ExampleDefaultRenderer() {
+func ExampleRendererBuilder() {
 	rv1 := exampleBundle()
 
-	// Use the DefaultRenderer directly for more control
-	objs, err := regv1render.DefaultRenderer.Render(rv1, "operators")
+	// Use NewRendererBuilder for full control
+	objs, err := regv1render.NewRendererBuilder().Build().Render(rv1, "operators")
 	if err != nil {
 		panic(err)
 	}

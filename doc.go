@@ -8,16 +8,18 @@
 //
 //	objs, err := regv1render.Render(rv1, "install-namespace")
 //
-// For more control, use the DefaultRenderer directly or construct a custom
-// BundleRenderer with specific validators and generators.
+// For more control, use the builder to create a configured Renderer:
+//
+//	r := regv1render.NewRendererBuilder().
+//	    WithCertificateProvider(regv1render.CertManagerProvider{}).
+//	    Build()
+//	objs, err := r.Render(rv1, "install-namespace",
+//	    regv1render.WithTargetNamespaces("watch-ns"),
+//	    regv1render.WithProvidedAPIsClusterRoles(),
+//	)
 //
 // Bundles can be loaded from a filesystem using FromFS:
 //
 //	source := regv1render.FromFS(os.DirFS("path/to/bundle"))
 //	rv1, err := source.GetBundle()
-//
-// OLMv0 compatibility features (such as provided API ClusterRoles) are
-// available as opt-in rendering options:
-//
-//	objs, err := regv1render.Render(rv1, "ns", regv1render.WithProvidedAPIsClusterRoles())
 package regv1render
