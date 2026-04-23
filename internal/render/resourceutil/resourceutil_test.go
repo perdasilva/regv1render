@@ -12,8 +12,8 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/regv1render/internal/render"
-	"github.com/perdasilva/regv1render/internal/render/resourceutil"
+	"github.com/perdasilva/rv1/internal/render"
+	"github.com/perdasilva/rv1/internal/render/resourceutil"
 )
 
 func Test_OptionsApplyToExecutesIgnoresNil(t *testing.T) {

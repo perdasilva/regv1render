@@ -15,13 +15,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
-	"github.com/perdasilva/regv1render"
+	"github.com/perdasilva/rv1"
 )
 
 type renderConfig struct {
-	ProvidedAPIsClusterRoles bool                          `json:"providedAPIsClusterRoles"`
-	DeploymentConfig         *regv1render.DeploymentConfig `json:"deploymentConfig,omitempty"`
-	CertificateProvider      *certificateProviderConfig    `json:"certificateProvider,omitempty"`
+	ProvidedAPIsClusterRoles bool                       `json:"providedAPIsClusterRoles"`
+	DeploymentConfig         *rv1.DeploymentConfig      `json:"deploymentConfig,omitempty"`
+	CertificateProvider      *certificateProviderConfig `json:"certificateProvider,omitempty"`
 }
 
 const (
@@ -110,7 +110,7 @@ Examples:
 				return fmt.Errorf("reading bundle from stdin: %w", err)
 			}
 
-			source := regv1render.FromFS(bundleFS)
+			source := rv1.FromFS(bundleFS)
 			rv1, err := source.GetBundle()
 			if err != nil {
 				return fmt.Errorf("parsing bundle: %w", err)
@@ -149,19 +149,19 @@ func loadConfig(path string) (renderConfig, error) {
 	return cfg, nil
 }
 
-func buildRenderer(cfg renderConfig) *regv1render.Renderer {
-	b := regv1render.NewRendererBuilder()
+func buildRenderer(cfg renderConfig) *rv1.Renderer {
+	b := rv1.NewRendererBuilder()
 	if cfg.DeploymentConfig != nil {
 		b.WithDeploymentConfig(cfg.DeploymentConfig)
 	}
 	if p := cfg.CertificateProvider; p != nil {
 		switch p.Type {
 		case certProviderCertManager:
-			b.WithCertificateProvider(regv1render.CertManagerProvider{})
+			b.WithCertificateProvider(rv1.CertManagerProvider{})
 		case certProviderOpenShiftServiceCA:
-			b.WithCertificateProvider(regv1render.OpenShiftServiceCAProvider{})
+			b.WithCertificateProvider(rv1.OpenShiftServiceCAProvider{})
 		case certProviderSecret:
-			provider := regv1render.SecretCertProvider{}
+			provider := rv1.SecretCertProvider{}
 			if p.Secret != nil {
 				provider.Cert = []byte(p.Secret.Cert)
 				provider.Key = []byte(p.Secret.Key)
@@ -172,13 +172,13 @@ func buildRenderer(cfg renderConfig) *regv1render.Renderer {
 	return b.Build()
 }
 
-func buildRenderOptions(cfg renderConfig, watchNamespaces []string) []regv1render.RenderOption {
-	var opts []regv1render.RenderOption
+func buildRenderOptions(cfg renderConfig, watchNamespaces []string) []rv1.RenderOption {
+	var opts []rv1.RenderOption
 	if len(watchNamespaces) > 0 {
-		opts = append(opts, regv1render.WithTargetNamespaces(watchNamespaces...))
+		opts = append(opts, rv1.WithTargetNamespaces(watchNamespaces...))
 	}
 	if cfg.ProvidedAPIsClusterRoles {
-		opts = append(opts, regv1render.WithProvidedAPIsClusterRoles())
+		opts = append(opts, rv1.WithProvidedAPIsClusterRoles())
 	}
 	return opts
 }

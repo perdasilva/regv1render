@@ -1,12 +1,10 @@
-package regv1render
+package rv1
 
 import (
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/render"
-	"github.com/perdasilva/regv1render/internal/render/certproviders"
-	"github.com/perdasilva/regv1render/internal/render/validator"
+	"github.com/perdasilva/rv1/internal/bundle"
+	"github.com/perdasilva/rv1/internal/render"
+	"github.com/perdasilva/rv1/internal/render/certproviders"
+	"github.com/perdasilva/rv1/internal/render/validator"
 )
 
 // Renderer validates and renders registry+v1 bundles to plain
@@ -50,8 +48,8 @@ type RendererBuilder struct {
 // NewRendererBuilder creates a RendererBuilder with the standard
 // registry+v1 validator and generators.
 //
-//	r := regv1render.NewRendererBuilder().
-//	    WithCertificateProvider(regv1render.CertManagerProvider{}).
+//	r := rv1.NewRendererBuilder().
+//	    WithCertificateProvider(rv1.CertManagerProvider{}).
 //	    WithProvidedAPIsClusterRoles().
 //	    Build()
 func NewRendererBuilder() *RendererBuilder {
@@ -91,13 +89,4 @@ func WithProvidedAPIsClusterRoles() RenderOption {
 // WithTargetNamespaces sets the namespaces the operator should watch.
 func WithTargetNamespaces(namespaces ...string) RenderOption {
 	return render.WithTargetNamespaces(namespaces...)
-}
-
-// DefaultRenderer is a pre-configured Renderer with default settings.
-var DefaultRenderer = NewRendererBuilder().Build()
-
-// Render is a convenience function that renders a registry+v1 bundle
-// using the DefaultRenderer.
-func Render(rv1 RegistryV1, installNamespace string, opts ...RenderOption) ([]client.Object, error) {
-	return DefaultRenderer.Render(rv1, installNamespace, opts...)
 }

@@ -10,8 +10,8 @@ import (
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/render/validator"
+	"github.com/perdasilva/rv1/internal/bundle"
+	"github.com/perdasilva/rv1/internal/render/validator"
 )
 
 // DeploymentConfig is a type alias for v1alpha1.SubscriptionConfig

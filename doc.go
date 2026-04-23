@@ -1,25 +1,26 @@
-// Package regv1render renders OLM registry+v1 bundles to plain Kubernetes manifests.
+// Package rv1 renders OLM registry+v1 bundles to plain Kubernetes manifests.
 //
 // This library is extracted from the operator-framework/operator-controller rendering
 // pipeline and is compatible with the operator-framework/operator-lifecycle-manager
 // rendering behavior.
 //
-// The simplest way to render a bundle is with the top-level Render function:
+// Create a Renderer using the builder:
 //
-//	objs, err := regv1render.Render(rv1, "install-namespace")
+//	renderer := rv1.NewRendererBuilder().Build()
+//	objs, err := renderer.Render(bundle, "install-namespace")
 //
-// For more control, use the builder to create a configured Renderer:
+// Configure certificate providers and render options:
 //
-//	r := regv1render.NewRendererBuilder().
-//	    WithCertificateProvider(regv1render.CertManagerProvider{}).
+//	renderer := rv1.NewRendererBuilder().
+//	    WithCertificateProvider(rv1.CertManagerProvider{}).
 //	    Build()
-//	objs, err := r.Render(rv1, "install-namespace",
-//	    regv1render.WithTargetNamespaces("watch-ns"),
-//	    regv1render.WithProvidedAPIsClusterRoles(),
+//	objs, err := renderer.Render(bundle, "install-namespace",
+//	    rv1.WithTargetNamespaces("watch-ns"),
+//	    rv1.WithProvidedAPIsClusterRoles(),
 //	)
 //
 // Bundles can be loaded from a filesystem using FromFS:
 //
-//	source := regv1render.FromFS(os.DirFS("path/to/bundle"))
-//	rv1, err := source.GetBundle()
-package regv1render
+//	source := rv1.FromFS(os.DirFS("path/to/bundle"))
+//	bundle, err := source.GetBundle()
+package rv1

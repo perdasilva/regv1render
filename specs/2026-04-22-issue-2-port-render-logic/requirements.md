@@ -10,7 +10,7 @@
 - DeploymentConfig / SubscriptionConfig support is ported
 - All upstream unit tests pass against the ported code
 - All upstream regression tests pass — golden-file tests verify rendered output byte-for-byte against 107 expected YAML fixtures across 7 test cases
-- The public API is importable at `github.com/perdasilva/regv1render`
+- The public API is importable at `github.com/perdasilva/rv1`
 
 ## Non-Functional Requirements
 

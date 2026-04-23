@@ -1,4 +1,4 @@
-package regv1render_test
+package rv1_test
 
 import (
 	"testing"
@@ -11,11 +11,11 @@ import (
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	"github.com/perdasilva/regv1render"
+	regv1 "github.com/perdasilva/rv1"
 )
 
 func TestWithProvidedAPIsClusterRoles(t *testing.T) {
-	rv1 := regv1render.RegistryV1{
+	rv1 := regv1.RegistryV1{
 		PackageName: "test-operator",
 		CSV: v1alpha1.ClusterServiceVersion{
 			ObjectMeta: metav1.ObjectMeta{Name: "test-operator.v1.0.0"},
@@ -54,7 +54,7 @@ func TestWithProvidedAPIsClusterRoles(t *testing.T) {
 	}
 
 	t.Run("without option produces no provided API roles", func(t *testing.T) {
-		objs, err := regv1render.Render(rv1, "test-ns")
+		objs, err := regv1.NewRendererBuilder().Build().Render(rv1, "test-ns")
 		require.NoError(t, err)
 
 		for _, obj := range objs {
@@ -67,8 +67,8 @@ func TestWithProvidedAPIsClusterRoles(t *testing.T) {
 	})
 
 	t.Run("with option produces provided API roles", func(t *testing.T) {
-		objs, err := regv1render.Render(rv1, "test-ns",
-			regv1render.WithProvidedAPIsClusterRoles(),
+		objs, err := regv1.NewRendererBuilder().Build().Render(rv1, "test-ns",
+			regv1.WithProvidedAPIsClusterRoles(),
 		)
 		require.NoError(t, err)
 

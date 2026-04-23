@@ -8,8 +8,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/perdasilva/regv1render/internal/render"
-	"github.com/perdasilva/regv1render/internal/render/certproviders"
+	"github.com/perdasilva/rv1/internal/render"
+	"github.com/perdasilva/rv1/internal/render/certproviders"
 )
 
 func TestSecretCertProvider_InjectCABundle(t *testing.T) {

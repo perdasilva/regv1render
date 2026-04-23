@@ -1,11 +1,11 @@
-# regv1render
+# rv1
 
 A standalone Go library for rendering OLM registry+v1 bundles to plain Kubernetes manifests. Extracted from `operator-framework/operator-controller/internal/rukpak/render` and compatible with `operator-framework/operator-lifecycle-manager` rendering behavior.
 
 ## Architecture
 
 ```
-*.go           Public API at repo root — consumers import github.com/perdasilva/regv1render
+*.go           Public API at repo root — consumers import github.com/perdasilva/rv1
 testdata/      Test fixtures (ignored by go build)
 internal/      Non-public implementation details (not importable by consumers)
   bundle/      RegistryV1 bundle type, annotations, and source loading (fs.FS)

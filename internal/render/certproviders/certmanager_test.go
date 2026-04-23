@@ -14,8 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/regv1render/internal/render"
-	"github.com/perdasilva/regv1render/internal/render/certproviders"
+	"github.com/perdasilva/rv1/internal/render"
+	"github.com/perdasilva/rv1/internal/render/certproviders"
 )
 
 func Test_CertManagerProvider_InjectCABundle(t *testing.T) {

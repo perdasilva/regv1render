@@ -8,10 +8,10 @@ Set up the cobra-based CLI with the `render` subcommand and stdin tar reading.
 
 - Add `github.com/spf13/cobra` dependency (already a transitive dep via controller-runtime)
 - Replace the placeholder `cmd/rv1/main.go` with a cobra root command and `render` subcommand
-- Implement stdin tar reading: read a tar stream, extract it to a temporary `fs.FS`, pass to `regv1render.FromFS()`
+- Implement stdin tar reading: read a tar stream, extract it to a temporary `fs.FS`, pass to `rv1.FromFS()`
 - Add `--install-namespace` flag (required)
 - Add `--watch-namespace` flag (optional, repeatable)
-- Render the bundle using `regv1render.Render()` and output multi-document YAML (`---` separated) to stdout
+- Render the bundle using `rv1.Render()` and output multi-document YAML (`---` separated) to stdout
 - Verify basic flow works: `crane export <image> - | rv1 render --install-namespace test-ns`
 
 ## Task Group 2: Config file support (medium)

@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/perdasilva/regv1render/internal/render"
+	"github.com/perdasilva/rv1/internal/render"
 )
 
 var _ render.CertificateProvider = (*SecretCertProvider)(nil)

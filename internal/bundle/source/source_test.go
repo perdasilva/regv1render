@@ -11,10 +11,10 @@ import (
 
 	"github.com/operator-framework/api/pkg/operators/v1alpha1"
 
-	"github.com/perdasilva/regv1render/internal/bundle"
-	"github.com/perdasilva/regv1render/internal/bundle/source"
-	"github.com/perdasilva/regv1render/internal/util/testutil/bundlefs"
-	"github.com/perdasilva/regv1render/internal/util/testutil/clusterserviceversion"
+	"github.com/perdasilva/rv1/internal/bundle"
+	"github.com/perdasilva/rv1/internal/bundle/source"
+	"github.com/perdasilva/rv1/internal/util/testutil/bundlefs"
+	"github.com/perdasilva/rv1/internal/util/testutil/clusterserviceversion"
 )
 
 const (

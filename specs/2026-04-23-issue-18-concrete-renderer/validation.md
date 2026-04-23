@@ -10,7 +10,7 @@
 6. CLI uses `NewRenderer` + `Render` pattern
 7. `make verify` passes
 8. All regression tests pass without golden file changes
-9. `go doc github.com/perdasilva/regv1render` shows simplified API
+9. `go doc github.com/perdasilva/rv1` shows simplified API
 
 ## Test Scenarios
 
@@ -31,6 +31,6 @@
 
 ## Manual Verification
 
-1. `go doc github.com/perdasilva/regv1render` — verify simplified API
+1. `go doc github.com/perdasilva/rv1` — verify simplified API
 2. `make build && bin/rv1 render --help` — CLI still works
 3. Run regression tests — golden files unchanged
